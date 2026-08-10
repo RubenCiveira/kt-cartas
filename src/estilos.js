@@ -23,19 +23,48 @@ export default `
   --texto: #C9D4E0;
   --tenue: #7C8DA3;
   --acento: #2FB8A6;
+  /* Rojo para dark: el #B42318 de antes daba 2,6:1 sobre el panel, por debajo
+     del 4,5:1 que pide la AA. Este da 6,1:1 y sigue leyéndose como rojo. */
+  --error: #F97066;
+  /* Que los controles nativos (inputs, autorrelleno, scrollbars) se pinten en
+     oscuro en vez de heredar el tema claro del sistema. */
+  color-scheme: dark;
   --mini-esc: 0.72;
   --mini-ancho: calc(70mm * var(--mini-esc));
   --mini-alto: calc(121mm * var(--mini-esc));
 }
 
-body { background: var(--fondo); margin: 0; }
+/* El color de texto se hereda desde aquí. Sin él, todo lo que no lleve color
+   propio —los <h1> y <p> de las pantallas de acceso— salía en el negro por
+   defecto del navegador sobre el fondo oscuro: 1,2:1, ilegible. */
+body { background: var(--fondo); color: var(--texto); margin: 0; }
+
+/* ---------- Panel ---------- */
+/* La caja de las pantallas de acceso (login, verificación de email y solicitud
+   de autorización). La clase se usaba en App.jsx pero no existía aquí, así que
+   el formulario flotaba sobre el fondo sin caja ni separación. */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--linea);
+  border-radius: 12px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  box-sizing: border-box;
+}
+.panel h1 {
+  margin: 0 0 4px;
+  font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase; color: #EFE9DA;
+}
+.panel p { line-height: 1.45; margin: 0 0 12px; }
+.error { color: var(--error); }
 
 /* ---------- Controles comunes ---------- */
-select {
+input[type="text"], input[type="email"], input[type="password"], select {
   background: #182233; color: #DDE6F0; border: 1px solid var(--linea);
   border-radius: 6px; padding: 7px 9px; font-size: 14px; width: 100%;
   font-family: 'Barlow', sans-serif; box-sizing: border-box;
 }
+input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focus,
 select:focus { outline: 2px solid var(--acento); outline-offset: 0; }
 label {
   display: block; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;

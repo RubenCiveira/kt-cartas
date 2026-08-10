@@ -604,7 +604,7 @@ function PantallaEstado({ texto, detalle, ayuda, accion, onAccion, accionSecunda
           <p>{texto}</p>
           {detalle && <p className="tenue">{detalle}</p>}
           {ayuda && <p className="tenue">{ayuda}</p>}
-          {error && <p className="tenue" style={{ color: "#B42318" }}>{error}</p>}
+          {error && <p className="error">{error}</p>}
           {accion && <button className="btn btn-primario" onClick={onAccion}>{accion}</button>}
           {accionSecundaria && <button className="btn" onClick={onAccionSecundaria} style={{ marginLeft: 8 }}>{accionSecundaria}</button>}
         </div>
@@ -649,7 +649,7 @@ function LoginAppwrite({ error, onLogin, onRegister }) {
             Contraseña
             <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" required autoComplete="current-password" style={{ width: "100%" }} />
           </label>
-          {error && <p className="tenue" style={{ color: "#B42318" }}>{error}</p>}
+          {error && <p className="error">{error}</p>}
           <button className="btn btn-primario" disabled={enviando}>{enviando ? "Enviando…" : modo === "registro" ? "Registrarse" : "Entrar"}</button>
           <button type="button" className="btn" onClick={() => setModo(modo === "registro" ? "login" : "registro")} style={{ marginLeft: 8 }}>
             {modo === "registro" ? "Ya tengo cuenta" : "Registrarse"}
