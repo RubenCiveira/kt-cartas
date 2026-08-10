@@ -12,7 +12,7 @@ import estilos from "./estilos.js";
 import { useAssetUrl, useIconoBarajaUrl } from "./assets.js";
 import { TIPOS } from "./data/tipos.js";
 import { cargarBarajasRemotas, crearBarajaLocal, resolverMazo } from "./data/decks.js";
-import { completeVerification, getSessionUser, login, logout, register, requestAccessReview, sendVerification, userAvatarUrl } from "./appwrite.js";
+import { completeVerification, getSessionUser, login, loginWithGoogle, logout, register, requestAccessReview, sendVerification, userAvatarUrl } from "./appwrite.js";
 import { getFormato, STORAGE_KEY_FORMATO } from "./print/formatos.js";
 import { escribirHash, leerHash } from "./estado-url.js";
 import HojasImpresion from "./print/HojasImpresion.jsx";
@@ -98,6 +98,8 @@ export default function VisorCartasKT() {
 
   useEffect(() => {
     let cancelado = false;
+    const errorOAuth = procesarErrorOAuthPendiente();
+    if (errorOAuth) setErrorCarga(errorOAuth);
     procesarVerificacionPendiente()
       .catch((error) => {
         if (!cancelado) setErrorCarga(error.message || "No se pudo completar la verificación.");
@@ -419,7 +421,7 @@ export default function VisorCartasKT() {
   }
 
   if (estadoCarga === "login") {
-    return <LoginAppwrite error={errorCarga} onLogin={iniciarSesion} onRegister={registrarUsuario} />;
+    return <LoginAppwrite error={errorCarga} onLogin={iniciarSesion} onGoogleLogin={loginWithGoogle} onRegister={registrarUsuario} />;
   }
 
   if (estadoCarga === "no-verificado") {
@@ -588,6 +590,16 @@ async function procesarVerificacionPendiente() {
   window.history.replaceState(null, "", window.location.pathname + window.location.hash);
 }
 
+function procesarErrorOAuthPendiente() {
+  const params = new URLSearchParams(window.location.search);
+  if (!params.get("oauth_error")) return "";
+
+  params.delete("oauth_error");
+  const search = params.toString();
+  window.history.replaceState(null, "", window.location.pathname + (search ? `?${search}` : "") + window.location.hash);
+  return "No se pudo iniciar sesión con Google.";
+}
+
 function estadoParaUsuario(user) {
   if (!user) return "login";
   if (!user.emailVerification) return "no-verificado";
@@ -613,7 +625,7 @@ function PantallaEstado({ texto, detalle, ayuda, accion, onAccion, accionSecunda
   );
 }
 
-function LoginAppwrite({ error, onLogin, onRegister }) {
+function LoginAppwrite({ error, onLogin, onGoogleLogin, onRegister }) {
   const [modo, setModo] = useState("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -651,6 +663,11 @@ function LoginAppwrite({ error, onLogin, onRegister }) {
           </label>
           {error && <p className="error">{error}</p>}
           <button className="btn btn-primario" disabled={enviando}>{enviando ? "Enviando…" : modo === "registro" ? "Registrarse" : "Entrar"}</button>
+          {modo === "login" && (
+            <button type="button" className="btn" onClick={onGoogleLogin} disabled={enviando} style={{ marginLeft: 8 }}>
+              Entrar con Google
+            </button>
+          )}
           <button type="button" className="btn" onClick={() => setModo(modo === "registro" ? "login" : "registro")} style={{ marginLeft: 8 }}>
             {modo === "registro" ? "Ya tengo cuenta" : "Registrarse"}
           </button>

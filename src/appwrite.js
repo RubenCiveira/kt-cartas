@@ -1,4 +1,4 @@
-import { Account, Avatars, Client, Functions, ID, Query, Storage } from "appwrite";
+import { Account, Avatars, Client, Functions, ID, OAuthProvider, Query, Storage } from "appwrite";
 
 export const APPWRITE_ENDPOINT = import.meta.env.VITE_APPWRITE_ENDPOINT || "https://appwrite.civeira.net/v1";
 export const APPWRITE_PROJECT_ID = import.meta.env.VITE_APPWRITE_PROJECT_ID || "6a78dce100015acd19b2";
@@ -44,6 +44,18 @@ export async function login(email, password) {
     if (!String(error.message || "").includes("another session is active")) throw error;
   }
   return getSessionUser();
+}
+
+export function loginWithGoogle() {
+  clearClientJwt();
+  const successUrl = cleanCurrentUrl();
+  const failureUrl = new URL(successUrl);
+  failureUrl.searchParams.set("oauth_error", "1");
+  account.createOAuth2Session({
+    provider: OAuthProvider.Google,
+    success: successUrl.toString(),
+    failure: failureUrl.toString(),
+  });
 }
 
 export async function register(email, password, name) {
@@ -101,6 +113,15 @@ async function refreshStorageJwt() {
 function clearClientJwt() {
   delete client.headers["X-Appwrite-JWT"];
   client.config.jwt = "";
+}
+
+function cleanCurrentUrl() {
+  const url = new URL(window.location.href);
+  url.searchParams.delete("oauth_error");
+  url.searchParams.delete("verify");
+  url.searchParams.delete("userId");
+  url.searchParams.delete("secret");
+  return url;
 }
 
 export async function listBucketFiles(queries = []) {

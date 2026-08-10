@@ -16,6 +16,10 @@ y la label `aceptado` (el bucket de barajas está restringido a esa label). Copi
 `.env.example` a `.env` y ajusta el endpoint, el proyecto, el bucket y la Function
 de revisión si no usas los valores por defecto.
 
+El acceso puede hacerse con email/contraseña o con Google. Para Google, habilita
+el proveedor OAuth de Google en Appwrite y autoriza como URL de retorno el origen
+y ruta donde publiques esta app.
+
 ## Cómo se usa
 
 - **Portada**: la pantalla de entrada es el índice de barajas, agrupadas por
