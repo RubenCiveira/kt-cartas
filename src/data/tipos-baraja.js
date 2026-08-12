@@ -25,7 +25,18 @@ export const TIPOS_BARAJA = [
     titulo: "Campañas",
     descripcion: "Narrativas y operaciones enlazadas partida a partida.",
   },
+  {
+    id: "resumenes",
+    label: "Resúmenes",
+    titulo: "Resúmenes de reglas",
+    descripcion: "Hojas A5 de consulta rápida, para tener al lado del tablero.",
+  },
 ];
+
+// Las barajas de resúmenes no traen cartas sino hojas: no se hojean, se
+// imprimen. Quien pinte una baraja tiene que preguntar por esto antes de dar
+// por hecho que hay un mazo que recorrer.
+export const esResumenes = (tipo) => tipo === "resumenes";
 
 export const TIPO_BARAJA_DEFECTO = "reglas";
 

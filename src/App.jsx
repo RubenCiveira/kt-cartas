@@ -8,15 +8,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 
-import estilos from "./estilos.js";
+import estilos, { estilosResumen } from "./estilos.js";
 import { useAssetUrl, useIconoBarajaUrl } from "./assets.js";
 import { TIPOS } from "./data/tipos.js";
 import { cargarBarajasRemotas, crearBarajaLocal, resolverMazo } from "./data/decks.js";
+import { esResumenes } from "./data/tipos-baraja.js";
 import { completeVerification, getSessionUser, login, loginWithGoogle, logout, register, requestAccessReview, sendVerification, userAvatarUrl } from "./appwrite.js";
 import { getFormato, STORAGE_KEY_FORMATO } from "./print/formatos.js";
 import { escribirHash, leerHash } from "./estado-url.js";
 import HojasImpresion from "./print/HojasImpresion.jsx";
+import HojasResumen from "./print/HojasResumen.jsx";
 import DialogoImpresion from "./print/DialogoImpresion.jsx";
+import VisorResumenes from "./viewer/VisorResumenes.jsx";
 import BarraSuperior from "./viewer/BarraSuperior.jsx";
 import MiniCarta from "./viewer/MiniCarta.jsx";
 import DetalleCarta from "./viewer/DetalleCarta.jsx";
@@ -180,6 +183,7 @@ export default function VisorCartasKT() {
   const todasBarajas = useMemo(() => [...barajasLocales, ...barajas], [barajasLocales, barajas]);
   const mazo = useMemo(() => resolverMazo(todasBarajas, mazoActivo), [todasBarajas, mazoActivo]);
   const cartas = mazo ? mazo.cartas : VACIO;
+  const hojas = (mazo && mazo.hojas) || VACIO;
   const nombreMazo = mazo ? mazo.nombre : "";
   // Dos iconos y no uno: el dorso de las cartas y las hojas de impresión usan
   // el de la baraja tal cual —sin icono, no pintan ninguno—, mientras que el
@@ -345,7 +349,9 @@ export default function VisorCartasKT() {
 
   // Qué entra en la impresión se decide en el diálogo, sobre la baraja entera.
   const marcarTodo = () => setExcluidas([]);
-  const desmarcarTodo = () => setExcluidas(cartas.map((c) => c.id));
+  // Cartas y hojas de resumen comparten el registro de exclusiones: sus ids no
+  // colisionan ("c0" frente a "h0") y una baraja nunca trae de los dos tipos.
+  const desmarcarTodo = () => setExcluidas([...cartas, ...hojas].map((x) => x.id));
   const invertirTodo = () => setExcluidas(cartas.filter((c) => estaSeleccionada(c.id)).map((c) => c.id));
 
   const abrirDetalle = (id) => {
@@ -471,6 +477,34 @@ export default function VisorCartasKT() {
           usuario={usuario}
           avatarUrl={userAvatarUrl(usuario)}
           onLogout={cerrarSesion}
+        />
+      </>
+    );
+  }
+
+  // Una baraja de resúmenes no tiene mazo que hojear: su pantalla es la
+  // previsualización de las hojas y el botón de imprimir.
+  if (esResumenes(mazo.tipo)) {
+    return (
+      <>
+        <style>{estilos}</style>
+        <style>{estilosResumen}</style>
+        <VisorResumenes
+          hojas={hojas}
+          nombreMazo={nombreMazo}
+          seleccionadas={hojas.filter((h) => estaSeleccionada(h.id)).map((h) => h.id)}
+          onAlternar={alternar}
+          onTodas={marcarTodo}
+          onNinguna={desmarcarTodo}
+          onImprimir={() => window.print()}
+          onInicio={volverAInicio}
+          usuario={usuario}
+          avatarUrl={userAvatarUrl(usuario)}
+          onLogout={cerrarSesion}
+        />
+        <HojasResumen
+          hojas={hojas.filter((h) => estaSeleccionada(h.id))}
+          nombreMazo={nombreMazo}
         />
       </>
     );

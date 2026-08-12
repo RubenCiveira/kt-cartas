@@ -47,6 +47,28 @@ export function migrarCarta(c, i) {
   return base;
 }
 
+// Una hoja de resumen: A5 apaisada, a una o dos columnas, con bloques de texto
+// escritos en el mismo mini-lenguaje que el cuerpo de las cartas (ver
+// cards/texto.jsx): "# " encabezado, "> " y "- " viñetas y "|" tablas.
+export function migrarHoja(h, i) {
+  const columnas = h.columnas === 1 || h.columnas === 2 ? h.columnas : 2;
+  return {
+    id: h.id || "h" + i,
+    titulo: h.titulo || "",
+    subtitulo: h.subtitulo || "",
+    columnas,
+    pie: h.pie || "",
+    bloques: (Array.isArray(h.bloques) ? h.bloques : []).map((b, j) => ({
+      id: b.id || "b" + j,
+      titulo: b.titulo || "",
+      texto: b.texto || "",
+      // Un bloque ancho ocupa las dos columnas: es para las tablas, que a media
+      // hoja salen ilegibles. En hojas de una columna no cambia nada.
+      ancho: b.ancho === true,
+    })),
+  };
+}
+
 export async function cargarBarajasRemotas() {
   const files = await listBucketFiles([Query.equal("mimeType", "application/json")]);
   const jsonFiles = files
@@ -63,6 +85,7 @@ export async function cargarBarajasRemotas() {
       nombre: data.nombre || id,
       tipo: normalizarTipoBaraja(data.tipo),
       cartas: (data.cartas || []).map(migrarCarta),
+      hojas: (data.hojas || []).map(migrarHoja),
       icono: data.icono || "",
       fichas: data.fichas || null,
     };
@@ -88,13 +111,20 @@ export function resolverMazo(barajas, clave) {
 }
 
 function esBaraja(id) {
-  return id === "default-deck.json" || id === "glosario.json" || id === "mapas-basicos.json" || id.endsWith("-deck.json");
+  return (
+    id === "default-deck.json" ||
+    id === "glosario.json" ||
+    id === "mapas-basicos.json" ||
+    id.endsWith("-deck.json") ||
+    id.endsWith("-resumen.json")
+  );
 }
 
 function ordenDeck(id) {
   if (id === "default-deck.json") return 0;
   if (id === "glosario.json") return 1;
   if (id === "mapas-basicos.json") return 2;
+  if (id.endsWith("-resumen.json")) return 20;
   return 10;
 }
 
@@ -105,6 +135,7 @@ function normalizarBaraja(data, { clave, id, nombre }) {
     nombre,
     tipo: normalizarTipoBaraja(data.tipo),
     cartas: (data.cartas || []).map(migrarCarta),
+    hojas: (data.hojas || []).map(migrarHoja),
     icono: data.icono || "",
     fichas: data.fichas || null,
   };

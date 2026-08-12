@@ -554,6 +554,27 @@ label {
 }
 .lista-ayuda dd { margin: 2px 0 0; color: var(--texto); font-size: 13px; line-height: 1.45; }
 
+/* ---------- Resúmenes (pantalla) ---------- */
+/* La previsualización es la hoja de verdad reducida al 55%: lo que se ve es lo
+   que sale por la impresora, sin una maquetación paralela que mantener. Van en
+   fila y de dos en dos, como caen sobre el A4 apaisado. */
+.resumenes-cuerpo {
+  padding: 16px; display: flex; flex-wrap: wrap; gap: 18px;
+  align-items: flex-start; justify-content: center; overflow: auto;
+}
+.resumen-item { border: 2px solid var(--linea); border-radius: 8px; padding: 10px; opacity: 0.55; }
+.resumen-item.activa { opacity: 1; border-color: var(--acento); }
+.resumen-marca {
+  display: flex; align-items: center; gap: 8px; cursor: pointer;
+  color: var(--texto); font-size: 13px; margin-bottom: 8px;
+}
+.resumen-marca input { width: auto; }
+.resumen-lienzo {
+  width: calc(140mm * 0.55); height: calc(198mm * 0.55); overflow: hidden; line-height: 0;
+}
+.resumen-lienzo > * { transform: scale(0.55); transform-origin: top left; }
+.resumenes-nota { padding: 0 16px 20px; text-align: center; font-size: 12px; }
+
 /* ---------- Impresión ---------- */
 @page { size: A4; margin: 6mm; }
 .hoja-impresion { display: none; }
@@ -595,6 +616,17 @@ label {
   .celda-ficha > * { transform: scale(var(--esc-ficha)); transform-origin: top left; }
   .celda-vacia { outline: none; }
 
+  /* Resúmenes: dos A5 verticales (140 × 198 mm) en fila sobre un A4 apaisado.
+     No cuelgan de --esc; se imprimen a tamaño de diseño y se cortan por el
+     medio. La rotación de la página la pone estilosResumen (ver abajo). */
+  .pagina-a5 {
+    display: grid;
+    grid-template-columns: repeat(2, 140mm);
+    grid-auto-rows: 198mm;
+    gap: 4mm; justify-content: center; align-content: start;
+  }
+  .celda-a5 { width: 140mm; height: 198mm; overflow: hidden; }
+
   /* Hoja de fichas: aquí no hay escala que valga, cada pieza mide en mm lo que
      mide sobre la mesa. Por eso no cuelga de --esc como las cartas. */
   .rejilla-fichas {
@@ -611,4 +643,13 @@ label {
     color: #666; text-align: center; margin: 4mm auto 0; max-width: 150mm;
   }
 }
+`;
+
+// Los resúmenes se imprimen en A4 apaisado, y @page no se puede acotar por
+// selector: no hay forma de decir "esta página sí y esa no". La salida son dos
+// pantallas que nunca se imprimen a la vez, así que basta con inyectar esta
+// hoja *después* de la global cuando se está en el visor de resúmenes; la
+// última regla @page que se declara es la que manda.
+export const estilosResumen = `
+@page { size: A4 landscape; margin: 6mm; }
 `;

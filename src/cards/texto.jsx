@@ -2,16 +2,45 @@
 // embebidas y tablas escritas con "|" al inicio de línea.
 
 import { useAssetUrl } from "../assets.js";
+
+// Reparto de ancho de una tabla. Por defecto la primera columna pesa 1.3 y las
+// demás 1, que es lo que quiere casi cualquier tabla: un encabezado de fila y
+// valores cortos. Cuando no vale —una columna de prosa junto a otras de dos
+// caracteres—, la cabecera puede pedir ancho con sufijos: cada "+" suma 1fr y
+// cada "-" resta 0.4fr, con un mínimo de 0.4.
+//
+//     | Acción | PA- | Recorrido | Condiciones++ |
+//
+// El sufijo solo se lee en la fila de cabecera (y se borra al pintarla), así
+// que un "5+" de una celda de datos no se confunde con una marca de ancho.
+const AJUSTE = { "+": 1, "-": -0.4 };
+const MARCA = /[+-]+$/;
+
+function repartoColumnas(cabecera, nCols) {
+  const pesos = Array.from({ length: nCols }, (_, i) => (i === 0 ? 1.3 : 1));
+  const prosa = Array(nCols).fill(false);
+  (cabecera || []).forEach((celda, i) => {
+    const marca = celda.match(MARCA);
+    if (!marca) return;
+    for (const signo of marca[0]) pesos[i] += AJUSTE[signo];
+    // Una columna que ha pedido ensancharse lleva texto largo, así que se
+    // alinea a la izquierda: centrada se lee mucho peor.
+    if (marca[0].includes("+")) prosa[i] = true;
+  });
+  return { pesos: pesos.map((p) => Math.max(0.4, p)), prosa };
+}
+
 // Tabla en texto: líneas consecutivas que empiezan por "|" (celdas separadas por
 // "|"); la primera fila es la cabecera y la primera columna, encabezado de fila
 export function TablaTexto({ filas, color, fontSize }) {
   const celdas = filas.map((f) => f.replace(/^\|/, "").replace(/\|\s*$/, "").split("|").map((c) => c.trim()));
   const nCols = Math.max(...celdas.map((f) => f.length));
+  const { pesos, prosa } = repartoColumnas(celdas[0], nCols);
   return (
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: `1.3fr repeat(${nCols - 1}, 1fr)`,
+        gridTemplateColumns: pesos.map((p) => p + "fr").join(" "),
         margin: "0.8mm 0 1.2mm",
         border: `0.3mm solid ${color}`,
         borderRadius: "0.8mm",
@@ -20,12 +49,14 @@ export function TablaTexto({ filas, color, fontSize }) {
     >
       {celdas.flatMap((fila, fi) => {
         const completa = [...fila, ...Array(nCols - fila.length).fill("")];
-        return completa.map((celda, ci) => (
+        return completa.map((celdaCruda, ci) => {
+          const celda = fi === 0 ? celdaCruda.replace(MARCA, "").trim() : celdaCruda;
+          return (
           <span
             key={fi + "-" + ci}
             style={{
               padding: "0.5mm 0.7mm",
-              textAlign: ci === 0 ? "left" : "center",
+              textAlign: ci === 0 || prosa[ci] ? "left" : "center",
               fontWeight: fi === 0 || ci === 0 ? 700 : 400,
               background: fi === 0 ? color : ci === 0 ? "#F1F1F1" : "transparent",
               color: fi === 0 ? "#F5F0E4" : undefined,
@@ -38,7 +69,8 @@ export function TablaTexto({ filas, color, fontSize }) {
           >
             {celda}
           </span>
-        ));
+          );
+        });
       })}
     </div>
   );

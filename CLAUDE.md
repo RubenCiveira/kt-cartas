@@ -20,9 +20,10 @@ descripción funcional (filtros, índice, buscador, formatos de impresión).
   `mapas-basicos.json` y cualquier `*-deck.json`), los ordena con `ordenDeck()` y
   normaliza cada carta con `migrarCarta()`.
 - `src/data/tipos-baraja.js` — el **tipo de baraja** (`reglas`, `equipos`,
-  `campanas`), que cada JSON declara en su raíz y que agrupa las barajas en la
-  portada y en el selector. Sin campo o con un valor desconocido cuenta como
-  `reglas`. Es otra cosa que `data/tipos.js`, que clasifica las cartas de dentro.
+  `campanas`, `resumenes`), que cada JSON declara en su raíz y que agrupa las
+  barajas en la portada y en el selector. Sin campo o con un valor desconocido
+  cuenta como `reglas`. Es otra cosa que `data/tipos.js`, que clasifica las
+  cartas de dentro.
 - `src/assets.js` — `assetUrl(fileId)` traduce a URL los IDs de Storage que traen
   los campos `icono`, `foto` e `imagen` de los JSON. **Ya no son rutas de
   fichero**: `sync-storage.mjs` (en `app-write`) las convierte en IDs al publicar.
@@ -74,17 +75,53 @@ plantilla en `.env.example`:
     data/decks.js        carga remota y normalización de las barajas
     cards/               render de la carta (anverso, dorso, texto, iconos)
     print/               formatos, hojas A4 y diálogo de impresión
+    print/HojaA5.jsx     hoja de resumen (140 × 198 mm), y su paginado en HojasResumen.jsx
     viewer/              barra superior, tira, índice, buscador, detalle y narración
     viewer/Portada.jsx   índice de barajas por tipo (la pantalla de entrada)
     viewer/SelectorBarajas.jsx  popup anidado de la barra para cambiar de baraja
     viewer/useDock.js    magnificación por distancia al puntero
+
+## Resúmenes de reglas
+
+Las barajas de tipo `resumenes` no traen `cartas` sino `hojas`: hojas **A5
+verticales de 140 × 198 mm** para consulta en mesa, no un mazo. `App.jsx` ramifica
+en `esResumenes(mazo.tipo)` y pinta `viewer/VisorResumenes.jsx` (previsualización
+a escala + selección + imprimir) en lugar de la tira, el detalle y el diálogo. Se
+imprimen **dos en fila sobre un A4 apaisado**, para cortar por la vertical
+central, con `print/HojasResumen.jsx` y la rejilla `.pagina-a5`.
+
+`print/HojaA5.jsx` es a la hoja lo que `cards/CartaFace.jsx` a la carta: la pinta
+a tamaño de diseño y quien la muestre la escala en bloque. Reutiliza `LineasTexto`,
+así que el texto de un bloque se escribe con el mismo mini-lenguaje que el cuerpo
+de una carta. La medida no es A5 exacta a propósito: dos hojas de 148 × 210 no
+caben en un A4 apaisado con los 6 mm de margen de `@page`. **El cuerpo recorta lo
+que sobra sin avisar**; el arreglo es partir la hoja, no encoger el texto.
+
+**Las tablas** las pinta `TablaTexto` (`cards/texto.jsx`) a partir de líneas
+consecutivas que empiezan por `|`. Reparte el ancho con la primera columna a
+`1.3fr` y las demás a `1fr`, salvo que la **fila de cabecera** lo pida de otro
+modo: cada `+` en una celda de cabecera suma `1fr` y cada `-` resta `0.4fr`
+(mínimo `0.4`), y las columnas con `+` se alinean a la izquierda. Los sufijos se
+leen y se borran solo en la cabecera, así que un `5+` de una celda de datos no se
+confunde con una marca. Lo usan tanto las cartas como las hojas de resumen.
+
+**La rotación de la página.** `@page` no admite selector: no hay forma de decir
+«esta página apaisada y esa vertical». La global de `estilos.js` deja A4 vertical
+para las cartas, y el visor de resúmenes inyecta detrás `estilosResumen`, que
+vuelve a declarar `@page` en `landscape`. Funciona porque las dos pantallas nunca
+se imprimen a la vez y gana la última declaración. Si algún día hubiera que
+imprimir cartas y resúmenes de una tirada, esto deja de valer y habría que pasar
+a páginas con nombre (`@page resumen { … }` + `page: resumen`).
+
+Para el formato del JSON, ver `../app-write/CLAUDE.md`.
 
 ## Navegación
 
 Dos niveles. **Sin baraja abierta** se está en la portada: los tipos de baraja
 como chips y, debajo, las barajas de cada tipo. **Con baraja abierta** se ve el
 visor de siempre, y la barra lleva el botón de inicio y el selector, un popup
-con el mismo árbol (tipo → baraja) para saltar sin pasar por la portada.
+con el mismo árbol (tipo → baraja) para saltar sin pasar por la portada. Las
+barajas de resúmenes son la excepción: abren su propia pantalla.
 
 Lo manda el hash (ver `estado-url.js`): `#baraja=…` es el visor, y su ausencia,
 la portada, donde `#grupo=equipos` recuerda qué tipo estaba desplegado. Una

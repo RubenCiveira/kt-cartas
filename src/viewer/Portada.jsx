@@ -8,7 +8,7 @@
 
 import { useIconoBarajaUrl } from "../assets.js";
 import { etiquetaTipo } from "../data/tipos.js";
-import { agruparPorTipo } from "../data/tipos-baraja.js";
+import { agruparPorTipo, esResumenes } from "../data/tipos-baraja.js";
 import MenuUsuario from "./MenuUsuario.jsx";
 
 export default function Portada({ barajas, grupo, onGrupo, onBaraja, usuario, avatarUrl, onLogout }) {
@@ -76,7 +76,9 @@ export default function Portada({ barajas, grupo, onGrupo, onBaraja, usuario, av
 // Cada baraja se presenta por lo que trae dentro: su icono, cuántas cartas son
 // y de qué tipos, que es lo que distingue una baraja de facción de un glosario.
 function TarjetaBaraja({ baraja, onAbrir }) {
-  const tipos = resumenTipos(baraja.cartas);
+  // Las de resúmenes no traen cartas sino hojas A5: contarlas por cartas las
+  // anunciaría siempre como vacías.
+  const hojas = esResumenes(baraja.tipo);
   const icono = useIconoBarajaUrl(baraja.icono);
 
   return (
@@ -86,8 +88,12 @@ function TarjetaBaraja({ baraja, onAbrir }) {
       </span>
       <span className="portada-baraja-texto">
         <strong>{baraja.nombre}</strong>
-        <span className="tenue">{baraja.cartas.length} cartas</span>
-        <span className="portada-baraja-tipos">{tipos}</span>
+        <span className="tenue">
+          {hojas ? `${baraja.hojas.length} hojas A5` : `${baraja.cartas.length} cartas`}
+        </span>
+        <span className="portada-baraja-tipos">
+          {hojas ? "Consulta rápida" : resumenTipos(baraja.cartas)}
+        </span>
       </span>
     </button>
   );
