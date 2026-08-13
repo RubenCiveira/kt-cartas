@@ -4,7 +4,7 @@
 import { ARQUETIPOS, COLOR_ACCION, PT_MM, TIPOS, TIPOS_MISION } from "../data/tipos.js";
 import { useAssetUrl } from "../assets.js";
 import { ICONOS_ARQ, IconoArquetipo } from "./iconos.jsx";
-import { LineasTexto } from "./texto.jsx";
+import { conMarcas, LineasTexto } from "./texto.jsx";
 
 export default function CartaFace({ carta }) {
   const arqConocido = ARQUETIPOS.find((a) => a.id === carta.arquetipo);
@@ -318,7 +318,7 @@ export default function CartaFace({ carta }) {
               color: "#3A4250",
             }}
           >
-            {carta.revelado}
+            {conMarcas(carta.revelado)}
           </p>
         )}
         <LineasTexto texto={carta.cuerpo} color={arq.color} fontSize={tamCuerpo("cuerpo", "2.8mm")} lineHeight={alto("cuerpo")} />
@@ -457,7 +457,7 @@ export default function CartaFace({ carta }) {
             color: "#5A6270",
           }}
         >
-          {carta.flavor}
+          {conMarcas(carta.flavor)}
         </div>
       )}
     </div>

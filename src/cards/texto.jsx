@@ -3,6 +3,40 @@
 
 import { useAssetUrl } from "../assets.js";
 
+// Marcas dentro de una línea: **negrita** y __subrayado__, como en Markdown.
+// Se pueden anidar (**muy __importante__**) porque el contenido se vuelve a
+// parsear. Un asterisco suelto no significa nada: las barajas los usan como
+// llamada a nota al pie ("Arma especial*"), y solo el par cuenta.
+// El regex se crea en cada llamada a propósito: uno compartido con /g guarda
+// lastIndex, y la recursión de abajo se lo pisaría al bucle que la invoca.
+const marcas = () => /(\*\*|__)([^]+?)\1/g;
+
+export function conMarcas(texto) {
+  const t = String(texto == null ? "" : texto);
+  const trozos = [];
+  const re = marcas();
+  let ultimo = 0;
+  let clave = 0;
+  let m;
+  while ((m = re.exec(t)) !== null) {
+    if (m.index > ultimo) trozos.push(t.slice(ultimo, m.index));
+    const dentro = conMarcas(m[2]);
+    trozos.push(
+      m[1] === "**" ? (
+        <strong key={clave++} style={{ fontWeight: 700 }}>{dentro}</strong>
+      ) : (
+        <span key={clave++} style={{ textDecoration: "underline" }}>{dentro}</span>
+      )
+    );
+    ultimo = m.index + m[0].length;
+  }
+  // Sin marcas devuelve la cadena tal cual, que es el caso de casi todo el
+  // texto y evita envolverlo en arrays para nada.
+  if (!trozos.length) return t;
+  if (ultimo < t.length) trozos.push(t.slice(ultimo));
+  return trozos;
+}
+
 // Reparto de ancho de una tabla. Por defecto la primera columna pesa 1.3 y las
 // demás 1, que es lo que quiere casi cualquier tabla: un encabezado de fila y
 // valores cortos. Cuando no vale —una columna de prosa junto a otras de dos
@@ -67,7 +101,7 @@ export function TablaTexto({ filas, color, fontSize }) {
               lineHeight: 1.25,
             }}
           >
-            {celda}
+            {conMarcas(celda)}
           </span>
           );
         });
@@ -123,7 +157,7 @@ export function LineasTexto({ texto, color, fontSize = "2.8mm", lineHeight = 1.3
             margin: i === 0 ? "0 0 1mm" : "1.8mm 0 1mm",
           }}
         >
-          {l.slice(2)}
+          {conMarcas(l.slice(2))}
         </p>
       );
     }
@@ -139,13 +173,13 @@ export function LineasTexto({ texto, color, fontSize = "2.8mm", lineHeight = 1.3
           <span style={{ flex: "0 0 auto", color, fontSize: conPunto ? "3.45mm" : "2.3mm", lineHeight: altoGlifo }}>
             {conPunto ? "◆" : "▶"}
           </span>
-          <span style={{ flex: 1, fontSize, lineHeight }}>{l.slice(2)}</span>
+          <span style={{ flex: 1, fontSize, lineHeight }}>{conMarcas(l.slice(2))}</span>
         </div>
       );
     }
     return (
       <p key={i} style={{ fontSize, lineHeight, margin: "0 0 1.2mm" }}>
-        {l}
+        {conMarcas(l)}
       </p>
     );
   });

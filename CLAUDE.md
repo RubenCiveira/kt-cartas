@@ -97,6 +97,13 @@ de una carta. La medida no es A5 exacta a propósito: dos hojas de 148 × 210 no
 caben en un A4 apaisado con los 6 mm de margen de `@page`. **El cuerpo recorta lo
 que sobra sin avisar**; el arreglo es partir la hoja, no encoger el texto.
 
+**Negrita y subrayado** los resuelve `conMarcas` (`cards/texto.jsx`): `**x**` y
+`__x__`, anidables, sobre cualquier texto de autor —`LineasTexto` y sus tablas,
+más `revelado`, `flavor` y el `pie` de una hoja—. Solo cuenta el par: un
+asterisco suelto se imprime literal, porque las barajas los usan como llamada a
+nota al pie. El regex se construye en cada llamada a propósito; uno compartido
+con `/g` guardaría `lastIndex` y la recursión se lo pisaría al bucle exterior.
+
 **Las tablas** las pinta `TablaTexto` (`cards/texto.jsx`) a partir de líneas
 consecutivas que empiezan por `|`. Reparte el ancho con la primera columna a
 `1.3fr` y las demás a `1fr`, salvo que la **fila de cabecera** lo pida de otro

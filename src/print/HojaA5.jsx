@@ -7,7 +7,7 @@
 // los 6 mm de margen de @page. Recortadas caben en una funda o archivador A5.
 
 import { ARQUETIPOS } from "../data/tipos.js";
-import { LineasTexto } from "../cards/texto.jsx";
+import { conMarcas, LineasTexto } from "../cards/texto.jsx";
 
 export const HOJA_ANCHO = 140;
 export const HOJA_ALTO = 198;
@@ -129,7 +129,7 @@ export default function HojaA5({ hoja, acento = ACENTO_DEF }) {
             color: "#5A6270",
           }}
         >
-          {hoja.pie}
+          {conMarcas(hoja.pie)}
         </div>
       )}
     </div>
