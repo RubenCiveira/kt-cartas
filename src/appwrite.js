@@ -137,11 +137,13 @@ export async function listBucketFiles(queries = []) {
   }
 }
 
-export async function fetchJsonFile(fileId) {
+export async function fetchJsonFile(fileId, version = "") {
   const apiPath = `/storage/buckets/${encodeURIComponent(APPWRITE_ASSETS_BUCKET_ID)}/files/${encodeURIComponent(fileId)}/view`;
   const url = new URL(APPWRITE_ENDPOINT + apiPath);
+  if (version) url.searchParams.set("v", version);
   const data = await client.call("get", url, {
     "X-Appwrite-Project": APPWRITE_PROJECT_ID,
+    "cache-control": "no-cache",
     accept: "application/json",
   });
   if (typeof data?.message === "string") return JSON.parse(data.message);

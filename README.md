@@ -102,10 +102,9 @@ sola página, sin rutas del lado cliente.
 
 ## Notas
 
-- Portada y selector: una entrada por cada JSON publicado en el bucket que la app
-  reconoce como baraja (`default-deck.json`, `glosario.json`, `mapas-basicos.json`
-  y cualquier `*-deck.json`), todas con el mismo formato. Añadir una baraja es
-  subir su fichero desde `app-write`; la portada la recoge sola. Todas son de
+- Portada y selector: una entrada por cada JSON publicado en el bucket, todas con
+  el mismo formato. Añadir una baraja es subir su fichero desde `app-write`; la
+  portada la recoge sola. Todas son de
   solo lectura: lo único que se guarda en el navegador es el formato de impresión
   elegido (clave `kt-formato-v1`).
 - En qué grupo cae cada baraja lo dice su propio JSON, con un `"tipo"` en la raíz:

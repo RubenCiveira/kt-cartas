@@ -15,10 +15,9 @@ descripción funcional (filtros, índice, buscador, formatos de impresión).
   paginada del bucket), `fetchJsonFile` (descarga y parsea un JSON) y `fileUrl`
   (URL de vista de un fichero); además de la sesión: `login`, `register`,
   `sendVerification`, `completeVerification`, `requestAccessReview`, `logout`.
-- `src/data/decks.js` — `cargarBarajasRemotas()` lista los JSON del bucket, se
-  queda con los que pasan `esBaraja()` (`default-deck.json`, `glosario.json`,
-  `mapas-basicos.json` y cualquier `*-deck.json`), los ordena con `ordenDeck()` y
-  normaliza cada carta con `migrarCarta()`.
+- `src/data/decks.js` — `cargarBarajasRemotas()` lista los JSON del bucket,
+  acepta cualquier `*.json`, los ordena con `ordenDeck()` y normaliza cada carta
+  con `migrarCarta()`.
 - `src/data/tipos-baraja.js` — el **tipo de baraja** (`reglas`, `equipos`,
   `campanas`, `resumenes`), que cada JSON declara en su raíz y que agrupa las
   barajas en la portada y en el selector. Sin campo o con un valor desconocido

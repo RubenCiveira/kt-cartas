@@ -81,7 +81,7 @@ export async function cargarBarajasRemotas() {
     .sort((a, b) => ordenDeck(a.$id) - ordenDeck(b.$id) || a.$id.localeCompare(b.$id));
 
   const decks = await Promise.all(jsonFiles.map(async (file) => {
-    const data = await fetchJsonFile(file.$id);
+    const data = await fetchJsonFile(file.$id, file.signature || file.$updatedAt || "");
     const id = file.$id.replace(/\.json$/, "").replace(/-deck$/, "");
     const clave = file.$id === "default-deck.json" ? CLAVE_DEFECTO : "faccion:" + id;
     return {
@@ -117,9 +117,6 @@ export function resolverMazo(barajas, clave) {
 
 function esBaraja(id) {
   return (
-    id === "default-deck.json" ||
-    id === "glosario.json" ||
-    id === "mapas-basicos.json" ||
     id.endsWith("-deck.json") ||
     id.endsWith("-resumen.json")
   );
