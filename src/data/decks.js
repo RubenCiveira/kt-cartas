@@ -57,11 +57,16 @@ export function migrarHoja(h, i) {
     titulo: h.titulo || "",
     subtitulo: h.subtitulo || "",
     columnas,
+    // Encoge cuerpo e interlínea de toda la hoja (ver print/HojaA5.jsx).
+    compacto: h.compacto === true,
     pie: h.pie || "",
     bloques: (Array.isArray(h.bloques) ? h.bloques : []).map((b, j) => ({
       id: b.id || "b" + j,
       titulo: b.titulo || "",
       texto: b.texto || "",
+      // Un bloque con coste se pinta como el recuadro de acción de las cartas,
+      // no como un bloque de texto: el título pasa a ser el nombre de la acción.
+      coste: b.coste || "",
       // Un bloque ancho ocupa las dos columnas: es para las tablas, que a media
       // hoja salen ilegibles. En hojas de una columna no cambia nada.
       ancho: b.ancho === true,

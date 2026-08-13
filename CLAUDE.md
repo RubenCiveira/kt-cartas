@@ -97,6 +97,10 @@ de una carta. La medida no es A5 exacta a propósito: dos hojas de 148 × 210 no
 caben en un A4 apaisado con los 6 mm de margen de `@page`. **El cuerpo recorta lo
 que sobra sin avisar**; el arreglo es partir la hoja, no encoger el texto.
 
+**`compacto: true`** en una hoja cambia la escala de todo su cuerpo (constantes
+`NORMAL` y `COMPACTO` en `HojaA5.jsx`). `medir-hojas.mjs` replica esa escala, así
+que la estimación sigue valiendo con la hoja compactada.
+
 **Negrita y subrayado** los resuelve `conMarcas` (`cards/texto.jsx`): `**x**` y
 `__x__`, anidables, sobre cualquier texto de autor —`LineasTexto` y sus tablas,
 más `revelado`, `flavor` y el `pie` de una hoja—. Solo cuenta el par: un
