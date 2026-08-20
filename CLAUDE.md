@@ -76,6 +76,7 @@ plantilla en `.env.example`:
     print/               formatos, hojas A4 y diálogo de impresión
     print/HojaA5.jsx     hoja de resumen (140 × 198 mm), y su paginado en HojasResumen.jsx
     viewer/              barra superior, tira, índice, buscador, detalle y narración
+    viewer/Ampliacion.jsx  capa de lectura (marco y scroll) para hojas y fichas
     viewer/Portada.jsx   índice de barajas por tipo (la pantalla de entrada)
     viewer/SelectorBarajas.jsx  popup anidado de la barra para cambiar de baraja
     viewer/useDock.js    magnificación por distancia al puntero
@@ -88,6 +89,15 @@ en `esResumenes(mazo.tipo)` y pinta `viewer/VisorResumenes.jsx` (previsualizaci�
 a escala + selección + imprimir) en lugar de la tira, el detalle y el diálogo. Se
 imprimen **dos en fila sobre un A4 apaisado**, para cortar por la vertical
 central, con `print/HojasResumen.jsx` y la rejilla `.pagina-a5`.
+
+La previsualización está al 55% y ahí no se lee: **al pulsar una hoja se abre
+ampliada** (`viewer/HojaAmpliada.jsx` sobre `viewer/Ampliacion.jsx`), ajustada al
+ancho disponible y con el resto de la hoja abajo, para leerla desplazándose. La
+escala se **mide** —`clientWidth` de la caja entre `offsetWidth` de la hoja sin
+escalar—, no se convierte de mm a px, que depende del zoom del navegador. El
+ancho se topa en 860 px (`.ampliacion-caja`): estirar un A5 a un monitor entero
+se lee peor. Pulsar la hoja no cambia la selección de impresión; eso sigue siendo
+la casilla.
 
 `print/HojaA5.jsx` es a la hoja lo que `cards/CartaFace.jsx` a la carta: la pinta
 a tamaño de diseño y quien la muestre la escala en bloque. Reutiliza `LineasTexto`,
@@ -124,6 +134,18 @@ imprimir cartas y resúmenes de una tirada, esto deja de valer y habría que pas
 a páginas con nombre (`@page resumen { … }` + `page: resumen`).
 
 Para el formato del JSON, ver `../app-write/CLAUDE.md`.
+
+## Fichas
+
+Una baraja puede traer un bloque `fichas` con las piezas recortables. La plancha
+la pinta `print/HojaFichas.jsx` a tamaño real (en mm, sin `--esc`), y hay dos
+formas de verla: marcada en el diálogo de imprimir, o —sin pasar por la vista
+previa— con el botón **Fichas** de la barra, que abre `viewer/FichasAmpliadas.jsx`
+sobre papel blanco. Es la misma plancha en los dos sitios, así que sus estilos
+(`.rejilla-fichas`, `.ficha-corte`, `.ficha-texto`, `.pie-fichas`,
+`.etiqueta-hoja`) viven **fuera** de `@media print`; moverlos dentro rompería la
+pantalla. El botón sale en el visor normal y en el de resúmenes, y mirar las
+fichas no las mete en la impresión: eso sigue siendo `incluirFichas`.
 
 ## Navegación
 

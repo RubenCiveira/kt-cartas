@@ -20,6 +20,8 @@ import HojasImpresion from "./print/HojasImpresion.jsx";
 import HojasResumen from "./print/HojasResumen.jsx";
 import DialogoImpresion from "./print/DialogoImpresion.jsx";
 import VisorResumenes from "./viewer/VisorResumenes.jsx";
+import HojaAmpliada from "./viewer/HojaAmpliada.jsx";
+import FichasAmpliadas from "./viewer/FichasAmpliadas.jsx";
 import BarraSuperior from "./viewer/BarraSuperior.jsx";
 import MiniCarta from "./viewer/MiniCarta.jsx";
 import DetalleCarta from "./viewer/DetalleCarta.jsx";
@@ -79,6 +81,11 @@ export default function VisorCartasKT() {
   const [transicionId, setTransicionId] = useState(null);
   const [dialogo, setDialogo] = useState(false);
   const [indice, setIndice] = useState(false);
+  // Ampliaciones: la hoja de resumen que se está leyendo (por id) y si están
+  // abiertas las fichas. No van a la URL: son una lupa sobre lo que ya hay en
+  // pantalla, no un sitio al que volver.
+  const [hojaAmpliada, setHojaAmpliada] = useState(null);
+  const [verFichas, setVerFichas] = useState(false);
   // Carta a la que hay que saltar desde el índice o el buscador; se resuelve en
   // un efecto porque puede exigir quitar antes el filtro y esperar al repintado.
   const [aCentrar, setACentrar] = useState(inicial.carta);
@@ -191,6 +198,9 @@ export default function VisorCartasKT() {
   const iconoMazoUrl = useAssetUrl(mazo ? mazo.icono : "");
   const iconoSelector = useIconoBarajaUrl(mazo ? mazo.icono : "");
   const formato = getFormato(formatoId);
+  // Las fichas son de la baraja, no de la tirada: se miran en pantalla aunque
+  // no se vayan a imprimir, y por eso no dependen de `incluirFichas`.
+  const fichas = mazo && mazo.fichas && mazo.fichas.lista && mazo.fichas.lista.length ? mazo.fichas : null;
 
   useEffect(() => {
     try {
@@ -209,6 +219,8 @@ export default function VisorCartasKT() {
     setDetalleId(null);
     setIndice(false);
     setNarrando(false);
+    setHojaAmpliada(null);
+    setVerFichas(false);
   };
 
   // Volver a la portada es cambiar de baraja a "ninguna", más cerrar el diálogo
@@ -497,11 +509,23 @@ export default function VisorCartasKT() {
           onTodas={marcarTodo}
           onNinguna={desmarcarTodo}
           onImprimir={() => window.print()}
+          onAmpliar={setHojaAmpliada}
+          hayFichas={!!fichas}
+          onFichas={() => setVerFichas(true)}
           onInicio={volverAInicio}
           usuario={usuario}
           avatarUrl={userAvatarUrl(usuario)}
           onLogout={cerrarSesion}
         />
+        {hojaAmpliada && hojas.some((h) => h.id === hojaAmpliada) && (
+          <HojaAmpliada
+            hoja={hojas.find((h) => h.id === hojaAmpliada)}
+            onCerrar={() => setHojaAmpliada(null)}
+          />
+        )}
+        {verFichas && fichas && (
+          <FichasAmpliadas fichas={fichas} nombreMazo={nombreMazo} onCerrar={() => setVerFichas(false)} />
+        )}
         <HojasResumen
           hojas={hojas.filter((h) => estaSeleccionada(h.id))}
           nombreMazo={nombreMazo}
@@ -532,6 +556,8 @@ export default function VisorCartasKT() {
           onIndice={() => setIndice(true)}
           onIr={irACarta}
           onImprimir={() => setDialogo(true)}
+          hayFichas={!!fichas}
+          onFichas={() => setVerFichas(true)}
           usuario={usuario}
           avatarUrl={userAvatarUrl(usuario)}
           onLogout={cerrarSesion}
@@ -578,13 +604,17 @@ export default function VisorCartasKT() {
         />
       )}
 
+      {verFichas && fichas && (
+        <FichasAmpliadas fichas={fichas} nombreMazo={nombreMazo} onCerrar={() => setVerFichas(false)} />
+      )}
+
       {dialogo && (
         <DialogoImpresion
           formato={formato}
           onFormato={setFormatoId}
           incluirDorsos={incluirDorsos}
           onDorsos={setIncluirDorsos}
-          fichas={mazo.fichas}
+          fichas={fichas}
           incluirFichas={incluirFichas}
           onFichas={setIncluirFichas}
           cartas={cartas}
@@ -607,7 +637,7 @@ export default function VisorCartasKT() {
         incluirDorsos={incluirDorsos}
         nombreMazo={nombreMazo}
         icono={iconoMazoUrl}
-        fichas={mazo.fichas}
+        fichas={fichas}
         incluirFichas={incluirFichas}
       />
     </>

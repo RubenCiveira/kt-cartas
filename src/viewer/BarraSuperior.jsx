@@ -25,6 +25,8 @@ export default function BarraSuperior({
   onIndice,
   onIr,
   onImprimir,
+  hayFichas,
+  onFichas,
   usuario,
   avatarUrl,
   onLogout,
@@ -77,6 +79,11 @@ export default function BarraSuperior({
         <button className="btn btn-mini" onClick={onIndice} title="Ver todas las cartas de la baraja">
           ☰<span className="larga"> Índice</span>
         </button>
+        {hayFichas && (
+          <button className="btn btn-mini" onClick={onFichas} title="Ver las fichas de la baraja a tamaño real">
+            ●<span className="larga"> Fichas</span>
+          </button>
+        )}
         <Buscador cartas={cartas} onIr={onIr} />
         <div className="contador">
           <b className="acento">{seleccionadas}</b>

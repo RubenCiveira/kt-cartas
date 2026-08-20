@@ -13,6 +13,9 @@ export default function VisorResumenes({
   onTodas,
   onNinguna,
   onImprimir,
+  onAmpliar,
+  hayFichas,
+  onFichas,
   onInicio,
   usuario,
   avatarUrl,
@@ -30,6 +33,11 @@ export default function VisorResumenes({
             {hojas.length} hoja(s) A5 · {HOJA_ANCHO} × {HOJA_ALTO} mm
           </span>
           <div style={{ marginLeft: "auto", display: "flex", gap: 6, alignItems: "center" }}>
+            {hayFichas && (
+              <button className="btn btn-mini" onClick={onFichas} title="Ver las fichas a tamaño real">
+                Fichas
+              </button>
+            )}
             <button className="btn btn-mini" onClick={onTodas}>Todas</button>
             <button className="btn btn-mini" onClick={onNinguna}>Ninguna</button>
             <button
@@ -55,9 +63,17 @@ export default function VisorResumenes({
                 <span>{h.titulo || "Sin título"}</span>
                 <span className="tenue">{h.columnas === 1 ? "una columna" : "dos columnas"}</span>
               </label>
-              <div className="resumen-lienzo">
+              {/* La casilla decide qué se imprime; el lienzo, en cambio, abre
+                  la hoja para leerla. Son dos gestos distintos a propósito:
+                  mirar una hoja no debería cambiar la tirada. */}
+              <button
+                type="button"
+                className="resumen-lienzo"
+                onClick={() => onAmpliar(h.id)}
+                title="Abrir la hoja para leerla"
+              >
                 <HojaA5 hoja={h} />
-              </div>
+              </button>
             </div>
           );
         })}

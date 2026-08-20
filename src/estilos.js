@@ -571,23 +571,76 @@ label {
 .resumen-marca input { width: auto; }
 .resumen-lienzo {
   width: calc(140mm * 0.55); height: calc(198mm * 0.55); overflow: hidden; line-height: 0;
+  display: block; padding: 0; border: none; background: none; cursor: zoom-in;
 }
 .resumen-lienzo > * { transform: scale(0.55); transform-origin: top left; }
 .resumenes-nota { padding: 0 16px 20px; text-align: center; font-size: 12px; }
+
+/* ---------- Ampliación (leer una hoja o ver las fichas sin imprimir) ---------- */
+/* El desplazamiento es del fondo, no de una caja interior: así la barra de
+   cierre puede quedarse pegada arriba y el gesto es el de una página normal.
+   El ancho se topa antes de llenar un monitor entero; una hoja A5 estirada a
+   1400 px se lee peor, no mejor, y obliga a mover la vista en horizontal. */
+.ampliacion {
+  position: fixed; inset: 0; z-index: 70; overflow-y: auto; overscroll-behavior: contain;
+  background: rgba(6, 10, 18, 0.88); padding-bottom: 40px;
+}
+.ampliacion-caja { width: min(100%, 860px); margin: 0 auto; padding: 0 12px; }
+.ampliacion-barra {
+  position: sticky; top: 0; z-index: 1; display: flex; align-items: center;
+  justify-content: space-between; gap: 12px; padding: 10px 0;
+  background: rgba(6, 10, 18, 0.92); color: var(--texto); font-size: 14px;
+}
+.ampliacion-lienzo { overflow: hidden; line-height: 0; border-radius: 6px; }
+/* El max-content no es cosmético: la hoja de dentro mide 140 mm y el
+   envoltorio se mide para sacar la escala. Como bloque se estiraría al ancho
+   del lienzo y la escala saldría siempre 1. */
+.ampliacion-lienzo > * { transform-origin: top left; width: max-content; }
+.ampliacion-papel { background: #FFFFFF; border-radius: 6px; padding: 10px; }
+.ampliacion-nota { margin: 12px 0 0; font-size: 12px; line-height: 1.5; text-align: center; }
+
+/* ---------- Hoja de fichas ---------- */
+/* Fuera de @media print porque la misma plancha se mira en pantalla desde la
+   ampliación. Aquí no hay escala que valga: cada pieza mide en mm lo que mide
+   sobre la mesa, por eso no cuelga de --esc como las cartas. */
+.etiqueta-hoja {
+  font-family: 'Barlow Condensed', sans-serif; font-size: 2.8mm; letter-spacing: 0.06em;
+  text-transform: uppercase; color: #999; margin: 0 0 1.4mm; text-align: center;
+}
+.rejilla-fichas {
+  display: flex; flex-wrap: wrap; align-content: start;
+  gap: 2mm; justify-content: center;
+}
+.ficha-corte {
+  outline: 0.2mm dashed #999;
+  display: grid; place-items: center; overflow: hidden;
+}
+.ficha-corte img { width: 100%; height: 100%; object-fit: contain; }
+/* Fichas de texto (los números de agente): la silueta la dibuja el SVG de
+   HojaFichas, aquí solo se le da el tamaño y la tipografía. Ocupa algo menos
+   que la caja para dejar canto al recortar. */
+.ficha-texto {
+  width: 92%; height: 92%;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+.ficha-texto text {
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+  font-size: 44px; letter-spacing: -0.02em;
+}
+.pie-fichas {
+  font-family: 'Barlow', sans-serif; font-size: 2.6mm; line-height: 1.4;
+  color: #666; text-align: center; margin: 4mm auto 0; max-width: 150mm;
+}
 
 /* ---------- Impresión ---------- */
 @page { size: A4; margin: 6mm; }
 .hoja-impresion { display: none; }
 @media print {
   body { background: white !important; }
-  .app-visor, .portada, .detalle, .indice, .modal-fondo { display: none !important; }
+  .app-visor, .portada, .detalle, .indice, .modal-fondo, .ampliacion { display: none !important; }
   .hoja-impresion { display: block !important; background: white; }
   .hoja { page-break-after: always; break-after: page; }
   .hoja:last-child { page-break-after: auto; break-after: auto; }
-  .etiqueta-hoja {
-    font-family: 'Barlow Condensed', sans-serif; font-size: 2.8mm; letter-spacing: 0.06em;
-    text-transform: uppercase; color: #999; margin: 0 0 1.4mm; text-align: center;
-  }
   .pagina {
     display: grid;
     grid-template-columns: repeat(2, calc(70mm * var(--esc)));
@@ -626,22 +679,8 @@ label {
     gap: 4mm; justify-content: center; align-content: start;
   }
   .celda-a5 { width: 140mm; height: 198mm; overflow: hidden; }
-
-  /* Hoja de fichas: aquí no hay escala que valga, cada pieza mide en mm lo que
-     mide sobre la mesa. Por eso no cuelga de --esc como las cartas. */
-  .rejilla-fichas {
-    display: flex; flex-wrap: wrap; align-content: start;
-    gap: 2mm; justify-content: center;
-  }
-  .ficha-corte {
-    outline: 0.2mm dashed #999;
-    display: grid; place-items: center; overflow: hidden;
-  }
-  .ficha-corte img { width: 100%; height: 100%; object-fit: contain; }
-  .pie-fichas {
-    font-family: 'Barlow', sans-serif; font-size: 2.6mm; line-height: 1.4;
-    color: #666; text-align: center; margin: 4mm auto 0; max-width: 150mm;
-  }
+  /* La plancha de fichas se estiliza fuera de @media print (ver arriba): es la
+     misma en papel y en la ampliación de pantalla. */
 }
 `;
 
