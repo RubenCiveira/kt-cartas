@@ -616,6 +616,10 @@ label {
   display: grid; place-items: center; overflow: hidden;
 }
 .ficha-corte img { width: 100%; height: 100%; object-fit: contain; }
+/* La misma pieza dentro de la carta de guía: sin línea de corte, porque ahí no
+   se recorta nada. */
+.ficha-guia { display: grid; place-items: center; overflow: hidden; }
+.ficha-guia img { width: 100%; height: 100%; object-fit: contain; }
 /* Fichas de texto (los números de agente): la silueta la dibuja el SVG de
    HojaFichas, aquí solo se le da el tamaño y la tipografía. Ocupa algo menos
    que la caja para dejar canto al recortar. */

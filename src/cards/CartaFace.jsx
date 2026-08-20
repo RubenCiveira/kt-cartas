@@ -4,6 +4,7 @@
 import { ARQUETIPOS, COLOR_ACCION, PT_MM, TIPOS, TIPOS_MISION } from "../data/tipos.js";
 import { useAssetUrl } from "../assets.js";
 import { ICONOS_ARQ, IconoArquetipo } from "./iconos.jsx";
+import GuiaFichas from "./GuiaFichas.jsx";
 import { conMarcas, LineasTexto } from "./texto.jsx";
 
 export default function CartaFace({ carta }) {
@@ -322,6 +323,8 @@ export default function CartaFace({ carta }) {
           </p>
         )}
         <LineasTexto texto={carta.cuerpo} color={arq.color} fontSize={tamCuerpo("cuerpo", "2.8mm")} lineHeight={alto("cuerpo")} />
+        {/* Solo la lleva la carta que genera `conGuiaDeFichas` (ver data/decks.js) */}
+        <GuiaFichas fichas={carta.fichas} />
         {!esDatacard &&
           armas.map((a) => (
             <div key={a.id} style={{ margin: "0.8mm 0 1.8mm" }}>

@@ -138,10 +138,25 @@ Para el formato del JSON, ver `../app-write/CLAUDE.md`.
 ## Fichas
 
 Una baraja puede traer un bloque `fichas` con las piezas recortables. La plancha
-la pinta `print/HojaFichas.jsx` a tamaño real (en mm, sin `--esc`), y hay dos
-formas de verla: marcada en el diálogo de imprimir, o —sin pasar por la vista
-previa— con el botón **Fichas** de la barra, que abre `viewer/FichasAmpliadas.jsx`
-sobre papel blanco. Es la misma plancha en los dos sitios, así que sus estilos
+la pinta `print/HojaFichas.jsx` a tamaño real (en mm, sin `--esc`), y hay tres
+formas de ver lo que trae la baraja: la **carta de guía**, el botón **Fichas** de
+la barra (`viewer/FichasAmpliadas.jsx`, la plancha sobre papel blanco) y la
+casilla del diálogo de imprimir.
+
+**La carta de guía la genera `conGuiaDeFichas()` (`data/decks.js`)**, no el JSON:
+una baraja que declara `fichas` gana una carta con una entrada por pieza
+distinta y su cantidad, que pinta `cards/GuiaFichas.jsx` dentro de `CartaFace`.
+Las barajas de banda traen una carta «GUÍA DE FICHAS Y MARCADORES» con una
+imagen de relleno en el cuerpo; cuando el título encaja, la generada **ocupa su
+sitio** —conservando su id, que puede estar en una URL— en vez de añadirse
+detrás. Sin esa carta los tokens no se ven en ninguna parte del visor: solo
+existen como una casilla del diálogo, y para marcarla ya estás decidiendo qué
+imprimir sin haber visto lo que hay.
+
+Las piezas se encogen según cuántas distintas haya (`medidas()` en
+`GuiaFichas.jsx`): con más de veinte —los números de agente del mazo universal—
+se renuncia a la etiqueta, porque el dibujo ya es el número. La proporción entre
+tamaños sí se respeta: un marcador de 25 mm se ve mayor que una ficha de 20. Es la misma plancha en los dos sitios, así que sus estilos
 (`.rejilla-fichas`, `.ficha-corte`, `.ficha-texto`, `.pie-fichas`,
 `.etiqueta-hoja`) viven **fuera** de `@media print`; moverlos dentro rompería la
 pantalla. El botón sale en el visor normal y en el de resúmenes, y mirar las

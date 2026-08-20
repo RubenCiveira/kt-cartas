@@ -31,7 +31,7 @@ export default function HojaFichas({ fichas, nombreMazo }) {
       </div>
       <div className="rejilla-fichas">
         {copias.map((f) => (
-          <Ficha key={f.clave} ficha={f} mm={(f.mm || porDefecto) + SANGRE_MM * 2} />
+          <PiezaFicha key={f.clave} ficha={f} mm={(f.mm || porDefecto) + SANGRE_MM * 2} corte />
         ))}
       </div>
       <p className="pie-fichas">
@@ -42,11 +42,16 @@ export default function HojaFichas({ fichas, nombreMazo }) {
   );
 }
 
-function Ficha({ ficha, mm }) {
+// Una pieza suelta, del tamaño que se le pida. La exporta también la carta de
+// guía (`cards/GuiaFichas.jsx`), que enseña las mismas piezas más pequeñas y
+// sin línea de corte: ahí no se recorta nada, solo se mira. Por eso `corte` es
+// una opción y no lo que hace el componente siempre.
+export function PiezaFicha({ ficha, mm, corte }) {
   const url = useAssetUrl(ficha.imagen);
-  if (ficha.texto) return <FichaTexto ficha={ficha} mm={mm} />;
+  const clase = corte ? "ficha-corte" : "ficha-guia";
+  if (ficha.texto) return <FichaTexto ficha={ficha} mm={mm} clase={clase} />;
   return (
-    <div className="ficha-corte" style={{ width: mm + "mm", height: mm + "mm" }}>
+    <div className={clase} style={{ width: mm + "mm", height: mm + "mm" }}>
       {url && <img src={url} alt={ficha.nombre} />}
     </div>
   );
@@ -60,10 +65,10 @@ function Ficha({ ficha, mm }) {
 // que separa a un bando del otro sin gastar color.
 const SEGMENTO = "M26,12 Q50,7 74,12 L92,88 Q50,94 8,88 Z";
 
-function FichaTexto({ ficha, mm }) {
+function FichaTexto({ ficha, mm, clase }) {
   const tinta = "#1A1A1A";
   return (
-    <div className="ficha-corte" style={{ width: mm + "mm", height: mm + "mm" }}>
+    <div className={clase} style={{ width: mm + "mm", height: mm + "mm" }}>
       <svg className="ficha-texto" viewBox="0 0 100 100" role="img" aria-label={ficha.nombre}>
         <path
           d={SEGMENTO}

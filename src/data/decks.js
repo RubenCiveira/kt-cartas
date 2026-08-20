@@ -47,6 +47,53 @@ export function migrarCarta(c, i) {
   return base;
 }
 
+// La carta que enseña las fichas de la baraja.
+//
+// Sin ella los tokens no aparecen en ninguna parte del visor: solo existen como
+// una casilla del diálogo de imprimir, y para cuando la marcas ya estás
+// decidiendo qué imprimir, sin haber visto lo que hay. La carta se genera a
+// partir del bloque `fichas` del JSON, así que ninguna baraja tiene que
+// mantener a mano una lista que ya ha declarado.
+//
+// Las barajas de banda traen una carta de guía con una imagen de relleno donde
+// debería ir esa lista; cuando aparece, la generada ocupa su sitio en vez de
+// añadirse detrás, para no dejar dos cartas con el mismo título.
+export const ID_GUIA_FICHAS = "fichas";
+
+function esGuiaDeFichas(carta) {
+  return /fichas\s+y\s+marcadores/i.test(carta.titulo || "");
+}
+
+export function conGuiaDeFichas(cartas, fichas) {
+  const lista = Array.isArray(fichas && fichas.lista) ? fichas.lista : [];
+  if (!lista.length) return cartas;
+
+  const porDefecto = (fichas && fichas.mm) || 20;
+  const piezas = lista.map((f, i) => ({
+    id: "f" + i,
+    nombre: f.nombre || "",
+    imagen: f.imagen || "",
+    texto: f.texto || "",
+    invertido: f.invertido === true,
+    cantidad: f.cantidad || 1,
+    mm: f.mm || porDefecto,
+  }));
+  const copias = piezas.reduce((n, f) => n + f.cantidad, 0);
+
+  const guia = migrarCarta({
+    id: ID_GUIA_FICHAS,
+    tipo: "custom",
+    arquetipo: "ninguno",
+    titulo: "FICHAS Y MARCADORES",
+    revelado: `${piezas.length} piezas distintas · ${copias} para recortar`,
+    fichas: piezas,
+  });
+
+  const i = cartas.findIndex(esGuiaDeFichas);
+  if (i === -1) return [...cartas, guia];
+  return cartas.map((c, j) => (j === i ? { ...guia, id: c.id } : c));
+}
+
 // Una hoja de resumen: A5 apaisada, a una o dos columnas, con bloques de texto
 // escritos en el mismo mini-lenguaje que el cuerpo de las cartas (ver
 // cards/texto.jsx): "# " encabezado, "> " y "- " viñetas y "|" tablas.
@@ -89,7 +136,7 @@ export async function cargarBarajasRemotas() {
       id,
       nombre: data.nombre || id,
       tipo: normalizarTipoBaraja(data.tipo),
-      cartas: (data.cartas || []).map(migrarCarta),
+      cartas: conGuiaDeFichas((data.cartas || []).map(migrarCarta), data.fichas),
       hojas: (data.hojas || []).map(migrarHoja),
       icono: data.icono || "",
       fichas: data.fichas || null,
@@ -136,7 +183,7 @@ function normalizarBaraja(data, { clave, id, nombre }) {
     id,
     nombre,
     tipo: normalizarTipoBaraja(data.tipo),
-    cartas: (data.cartas || []).map(migrarCarta),
+    cartas: conGuiaDeFichas((data.cartas || []).map(migrarCarta), data.fichas),
     hojas: (data.hojas || []).map(migrarHoja),
     icono: data.icono || "",
     fichas: data.fichas || null,
