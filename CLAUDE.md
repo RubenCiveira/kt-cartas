@@ -153,6 +153,11 @@ detrás. Sin esa carta los tokens no se ven en ninguna parte del visor: solo
 existen como una casilla del diálogo, y para marcarla ya estás decidiendo qué
 imprimir sin haber visto lo que hay.
 
+Una ficha de `texto` sale con la **silueta de segmento** de las fichas oficiales
+de facción. `forma: "circulo"` la cambia por un disco: es para lo que representa
+un punto del tablero y no un estado de un operativo —los puntos de despliegue de
+JcE—. Sin el campo, segmento; `invertido` funciona con las dos formas.
+
 Las piezas se encogen según cuántas distintas haya (`medidas()` en
 `GuiaFichas.jsx`): con más de veinte —los números de agente del mazo universal—
 se renuncia a la etiqueta, porque el dibujo ya es el número. La proporción entre
