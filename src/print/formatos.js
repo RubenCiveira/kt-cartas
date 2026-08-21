@@ -34,6 +34,12 @@ export const FORMATOS = [
   },
 ];
 
+// Desvío horizontal de las hojas de dorso, en mm. Corrige que una impresora no
+// centre igual las dos caras del folio: mide el margen izquierdo del anverso y
+// el del dorso impresos, y pon aquí la mitad de la diferencia con el signo que
+// haga falta. 0 = sin corrección, que es lo que vale para la mayoría.
+export const DESVIO_DORSO_MM = 0;
+
 export const FORMATO_DEF = FORMATOS[0];
 
 export const getFormato = (id) => FORMATOS.find((f) => f.id === id) || FORMATO_DEF;
@@ -57,6 +63,7 @@ export const porHoja = (f) => (f.cols || 2) * (f.filas || 2);
 // reparte arriba y abajo para que el dibujo quede centrado en su recorte.
 export function variablesFormato(f) {
   const v = {
+    "--desvio-dorso": DESVIO_DORSO_MM + "mm",
     "--esc": f.esc,
     // El 0,95 existe para que quepan cuatro fichas apaisadas en un A4. Girada,
     // una ficha tiene que medir lo mismo que sus compañeras de hoja.

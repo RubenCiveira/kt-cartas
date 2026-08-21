@@ -660,6 +660,13 @@ label {
      papel; el de dentro, que es el que importa para casar cara y dorso, se
      conserva. */
   .pagina, .pagina-ficha { overflow: hidden; }
+  /* Calibración de impresora. Casi ninguna centra el papel igual por las dos
+     caras: si el anverso sale con 9 mm a la izquierda y 5 a la derecha, al
+     voltear el folio el dorso necesita 5 y 9, o no cae detrás de su carta.
+     --desvio-dorso mueve SOLO las hojas de dorso; con 0 no hace nada, que es lo
+     correcto mientras no se mida una impresora concreta. Se ajusta en
+     print/formatos.js, no aquí. */
+  .pagina-dorso, .pagina-ficha-dorso { transform: translateX(var(--desvio-dorso, 0mm)); }
   .pagina {
     display: grid;
     grid-template-columns: repeat(var(--cols, 2), var(--celda-ancho));
@@ -708,10 +715,17 @@ label {
     transform: translate(-1mm, calc(var(--aire, 0mm) - 1mm))
       scale(calc(var(--esc) * var(--dorso-x)), calc(var(--esc) * var(--dorso-y)));
   }
+  /* El dorso de una ficha girada rota al REVÉS que su anverso (-90° en vez de
+     +90°). Suena raro pero es lo que hace que, al dar la vuelta al papel, el
+     dibujo del dorso quede en el mismo sentido que la cara: el giro del folio
+     invierte uno de los dos ejes, así que las dos caras no pueden rotar hacia
+     el mismo lado. El translateY de 121 mm es aquí lo que el translateX de
+     70 mm es en el anverso: al rotar sobre la esquina, el bloque se va hacia
+     arriba y hay que bajarlo su nuevo alto. */
   .celda-dorso.celda-girada > * {
     transform: translate(-1mm, calc(var(--aire, 0mm) - 1mm))
       scale(calc(var(--esc) * var(--dorso-x)), calc(var(--esc) * var(--dorso-y)))
-      translateX(70mm) rotate(90deg);
+      translateY(121mm) rotate(-90deg);
   }
   .celda-ficha.celda-dorso > * {
     transform: translate(-1mm, -1mm)

@@ -50,7 +50,7 @@ export default function HojasImpresion({
               <Etiqueta>
                 {etiqueta} · dorso {i + 1}/{paginas.length} · imprimir al 100 %
               </Etiqueta>
-              <div className="pagina">
+              <div className="pagina pagina-dorso">
                 {espejarFilas(grupo, formato.cols || 2).map((c, j) =>
                   c ? (
                     <div key={c.id + "-dorso"} className={claseDorso(c)}>
@@ -84,7 +84,7 @@ export default function HojasImpresion({
               <Etiqueta>
                 {etiqueta} · fichas (dorso) {i + 1}/{paginasFichas.length}
               </Etiqueta>
-              <div className="pagina-ficha">
+              <div className="pagina-ficha pagina-ficha-dorso">
                 {espejarFilas(grupo, colsFicha(formato)).map((c, j) =>
                   c ? (
                     <div key={c.id + "-dorso"} className="celda-ficha celda-dorso">
