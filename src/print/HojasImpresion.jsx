@@ -5,25 +5,41 @@ import { Fragment } from "react";
 import CartaFace from "../cards/CartaFace.jsx";
 import CartaDorso from "../cards/CartaDorso.jsx";
 import HojaFichas from "./HojaFichas.jsx";
-import { espejarFilas, etiquetaFormato, repartirHojas } from "./formatos.js";
+import { colsFicha, espejarFilas, etiquetaFormato, medidas, repartirHojas, variablesFormato } from "./formatos.js";
 
 export default function HojasImpresion({
   cartas, formato, incluirDorsos, nombreMazo, icono, fichas, incluirFichas,
 }) {
-  const { paginas, paginasFichas } = repartirHojas(cartas);
+  const { paginas, paginasFichas } = repartirHojas(cartas, formato);
   const etiqueta = etiquetaFormato(formato);
+  // Una ficha de datos está diseñada apaisada (121 × 70). En los formatos que la
+  // giran ocupa una celda vertical como cualquier otra carta.
+  const clase = (c) =>
+    "celda" + (formato.giraFichas && c.tipo === "datacard" ? " celda-girada" : "");
+  const claseDorso = (c) => clase(c) + " celda-dorso";
+  const m = medidas(formato);
+  // La barra mide 50 mm de diseño. Si sobre el papel no mide 50, la página se ha
+  // reescalado y ninguna otra medida de la hoja es de fiar: es lo primero que
+  // hay que descartar cuando una carta sale de un tamaño que no toca.
+  const Etiqueta = ({ children }) => (
+    <div className="etiqueta-hoja">
+      {children}
+      <span className="regla-50" aria-hidden="true" />
+      <span className="regla-pie">50 mm · celda {m.ancho} × {m.alto}</span>
+    </div>
+  );
 
   return (
-    <div className="hoja-impresion" style={{ "--esc": formato.esc, "--esc-ficha": formato.esc * 0.95 }}>
+    <div className="hoja-impresion" style={variablesFormato(formato)}>
       {paginas.map((grupo, i) => (
         <Fragment key={i}>
           <div className="hoja">
-            <div className="etiqueta-hoja">
+            <Etiqueta>
               {etiqueta} · anverso {i + 1}/{paginas.length} · imprimir al 100 %
-            </div>
+            </Etiqueta>
             <div className="pagina">
               {grupo.map((c) => (
-                <div key={c.id} className="celda">
+                <div key={c.id} className={clase(c)}>
                   <CartaFace carta={c} />
                 </div>
               ))}
@@ -31,13 +47,13 @@ export default function HojasImpresion({
           </div>
           {incluirDorsos && (
             <div className="hoja">
-              <div className="etiqueta-hoja">
+              <Etiqueta>
                 {etiqueta} · dorso {i + 1}/{paginas.length} · imprimir al 100 %
-              </div>
+              </Etiqueta>
               <div className="pagina">
-                {espejarFilas(grupo, 2).map((c, j) =>
+                {espejarFilas(grupo, formato.cols || 2).map((c, j) =>
                   c ? (
-                    <div key={c.id + "-dorso"} className="celda">
+                    <div key={c.id + "-dorso"} className={claseDorso(c)}>
                       <CartaDorso carta={c} nombreMazo={nombreMazo} icono={icono} />
                     </div>
                   ) : (
@@ -52,9 +68,9 @@ export default function HojasImpresion({
       {paginasFichas.map((grupo, i) => (
         <Fragment key={"f" + i}>
           <div className="hoja">
-            <div className="etiqueta-hoja">
+            <Etiqueta>
               {etiqueta} · fichas {i + 1}/{paginasFichas.length} · imprimir al 100 %
-            </div>
+            </Etiqueta>
             <div className="pagina-ficha">
               {grupo.map((c) => (
                 <div key={c.id} className="celda-ficha">
@@ -65,15 +81,19 @@ export default function HojasImpresion({
           </div>
           {incluirDorsos && (
             <div className="hoja">
-              <div className="etiqueta-hoja">
+              <Etiqueta>
                 {etiqueta} · fichas (dorso) {i + 1}/{paginasFichas.length}
-              </div>
+              </Etiqueta>
               <div className="pagina-ficha">
-                {grupo.map((c) => (
-                  <div key={c.id + "-dorso"} className="celda-ficha">
-                    <CartaDorso carta={c} nombreMazo={nombreMazo} icono={icono} />
-                  </div>
-                ))}
+                {espejarFilas(grupo, colsFicha(formato)).map((c, j) =>
+                  c ? (
+                    <div key={c.id + "-dorso"} className="celda-ficha celda-dorso">
+                      <CartaDorso carta={c} nombreMazo={nombreMazo} icono={icono} />
+                    </div>
+                  ) : (
+                    <div key={"vacia-f-" + j} className="celda-ficha celda-vacia" />
+                  )
+                )}
               </div>
             </div>
           )}

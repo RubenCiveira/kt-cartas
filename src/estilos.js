@@ -638,6 +638,13 @@ label {
 
 /* ---------- Impresión ---------- */
 @page { size: A4; margin: 6mm; }
+/* Por defecto la caja de corte es el propio dibujo escalado; "Seis por hoja"
+   las sobrescribe desde el JS (ver print/formatos.js). */
+.hoja-impresion {
+  --celda-ancho: calc(70mm * var(--esc));
+  --celda-alto: calc(121mm * var(--esc));
+  --hueco: 3mm;
+}
 .hoja-impresion { display: none; }
 @media print {
   body { background: white !important; }
@@ -645,33 +652,102 @@ label {
   .hoja-impresion { display: block !important; background: white; }
   .hoja { page-break-after: always; break-after: page; }
   .hoja:last-child { page-break-after: auto; break-after: auto; }
+  /* overflow:hidden en la PÁGINA, no solo en la celda. Es el cinturón que
+     impide que nada vuelva a ensanchar la hoja: basta con que un hijo se salga
+     —y el sangrado del dorso se sale a propósito— para que el navegador decida
+     que la página no cabe en el A4 y la encoja entera. El precio es que el
+     sangrado de la fila y la columna exteriores se recorta contra el borde del
+     papel; el de dentro, que es el que importa para casar cara y dorso, se
+     conserva. */
+  .pagina, .pagina-ficha { overflow: hidden; }
   .pagina {
     display: grid;
-    grid-template-columns: repeat(2, calc(70mm * var(--esc)));
-    grid-auto-rows: calc(121mm * var(--esc));
-    gap: 3mm; justify-content: center; align-content: start;
+    grid-template-columns: repeat(var(--cols, 2), var(--celda-ancho));
+    grid-auto-rows: var(--celda-alto);
+    gap: var(--hueco, 3mm); justify-content: center; align-content: start;
   }
   /* El diseño base ocupa 70×121 mm; el formato elegido lo encoge en bloque
-     (--esc) sin rehacer la maquetación interna. */
-  .celda {
-    outline: 0.2mm dashed #999;
-    width: calc(70mm * var(--esc)); height: calc(121mm * var(--esc)); overflow: hidden;
+     (--esc) sin rehacer la maquetación interna. La celda es la caja de corte y
+     normalmente mide lo mismo que el dibujo; cuando mide más (--celda-alto),
+     el sobrante se reparte arriba y abajo con --aire, que es el papel que
+     necesita la plastificadora para sellar sin tocar el diseño. */
+  /* El hijo va FUERA DEL FLUJO a propósito: transform no cambia el tamaño de
+     maquetación: una carta escalada sigue midiendo 70 mm —y una ficha de datos
+     girada, 121— dentro de una celda de 64. Con tres columnas eso hace que la
+     página mida cientos de milímetros de más y el navegador la encoja entera
+     para que quepa, que es exactamente el síntoma de "sale más pequeña de lo
+     que dice el formato". En absoluto no ocupa sitio y la celda manda. */
+  .celda { position: relative; outline: 0.2mm dashed #999;
+    width: var(--celda-ancho); height: var(--celda-alto); overflow: hidden;
   }
-  .celda > * { transform: scale(var(--esc)); transform-origin: top left; }
+  .celda > * {
+    /* El !important no es pereza: CartaFace y CartaDorso fijan position:relative
+       EN LÍNEA para su propio apilado interno, y un estilo en línea gana a la
+       hoja. Sin esto la carta se queda en flujo y vuelve a ensanchar la página.
+       Absoluto le sirve igual como bloque contenedor, así que su z-index sigue
+       funcionando. */
+    position: absolute !important; top: 0; left: 0;
+    transform: translateY(var(--aire, 0mm)) scale(var(--esc)); transform-origin: top left;
+  }
+  /* Una ficha de datos se diseña apaisada (121 × 70). Girarla 90° la deja en
+     70 × 121, la misma caja que el resto, y así entra en la rejilla de tres
+     columnas al mismo tamaño que sus compañeras. El translateX de 70 mm la
+     devuelve al sitio: al rotar sobre la esquina superior izquierda el bloque
+     se va hacia la izquierda, y 70 mm es su nuevo ancho. */
+  .celda-girada > * {
+    transform: translateY(var(--aire, 0mm)) scale(var(--esc)) translateX(70mm) rotate(90deg);
+  }
+  /* SANGRADO DEL DORSO. Al imprimir a doble cara las dos caras nunca casan al
+     milímetro, y si el dibujo del dorso acaba justo en la línea de corte, un
+     desvío deja un reborde blanco. Aquí el dorso se dibuja 1 mm más grande por
+     cada lado y se recoloca -1 mm, así que queda centrado en el mismo sitio y
+     lo que sobra se va al hueco entre cartas, que para eso está. El anverso no
+     lo lleva: es el que marca dónde se corta. */
+  .celda-dorso { overflow: visible; }
+  .celda-dorso > * {
+    transform: translate(-1mm, calc(var(--aire, 0mm) - 1mm))
+      scale(calc(var(--esc) * var(--dorso-x)), calc(var(--esc) * var(--dorso-y)));
+  }
+  .celda-dorso.celda-girada > * {
+    transform: translate(-1mm, calc(var(--aire, 0mm) - 1mm))
+      scale(calc(var(--esc) * var(--dorso-x)), calc(var(--esc) * var(--dorso-y)))
+      translateX(70mm) rotate(90deg);
+  }
+  .celda-ficha.celda-dorso > * {
+    transform: translate(-1mm, -1mm)
+      scale(calc(var(--esc-ficha) * var(--dorso-fx)), calc(var(--esc-ficha) * var(--dorso-fy)));
+  }
+  /* La línea de corte se repinta encima: el sangrado la taparía justo en el
+     milímetro por el que hay que cortar. */
+  .celda-dorso { outline: none; }
+  .celda-dorso::after {
+    content: ""; position: absolute; inset: 0; z-index: 3;
+    outline: 0.2mm dashed #999; pointer-events: none;
+  }
   .pagina-ficha {
     display: grid;
-    grid-template-columns: calc(121mm * var(--esc-ficha));
+    grid-template-columns: repeat(var(--cols-ficha, 1), calc(121mm * var(--esc-ficha)));
     grid-auto-rows: calc(70mm * var(--esc-ficha));
-    gap: 3mm; justify-content: center; align-content: start;
+    gap: var(--hueco, 3mm); justify-content: center; align-content: start;
   }
   /* Las fichas se reducen además al 95% del diseño base (121×70 mm) para que
      quepan 4 por hoja A4 en vez de 3. */
   .celda-ficha {
-    outline: 0.2mm dashed #999;
+    position: relative; outline: 0.2mm dashed #999;
     width: calc(121mm * var(--esc-ficha)); height: calc(70mm * var(--esc-ficha)); overflow: hidden;
   }
-  .celda-ficha > * { transform: scale(var(--esc-ficha)); transform-origin: top left; }
+  .celda-ficha > * {
+    position: absolute !important; top: 0; left: 0;
+    transform: scale(var(--esc-ficha)); transform-origin: top left;
+  }
   .celda-vacia { outline: none; }
+  /* Testigo de escala: 50 mm reales impresos en cada hoja. Si la regla no mide
+     50, el navegador ha reescalado la página y no tiene sentido medir nada más. */
+  .regla-50 {
+    display: inline-block; width: 50mm; height: 2mm; margin: 0 2mm -0.4mm 4mm;
+    border: 0.3mm solid #999; border-top: none;
+  }
+  .regla-pie { font-size: 2.2mm; }
 
   /* Resúmenes: dos A5 verticales (140 × 198 mm) en fila sobre un A4 apaisado.
      No cuelgan de --esc; se imprimen a tamaño de diseño y se cortan por el

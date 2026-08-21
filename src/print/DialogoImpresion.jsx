@@ -8,7 +8,7 @@
 import { useState } from "react";
 import CartaFace from "../cards/CartaFace.jsx";
 import { etiquetaTipo } from "../data/tipos.js";
-import { FORMATOS, etiquetaFormato, medidas, repartirHojas } from "./formatos.js";
+import { FORMATOS, etiquetaFormato, medidas, medidasDibujo, porHoja, repartirHojas } from "./formatos.js";
 
 export default function DialogoImpresion({
   formato,
@@ -33,7 +33,7 @@ export default function DialogoImpresion({
   const [ayuda, setAyuda] = useState(false);
   const [vista, setVista] = useState("titulo");
   const medida = medidas(formato);
-  const { paginas, paginasFichas } = repartirHojas(seleccionadas);
+  const { paginas, paginasFichas } = repartirHojas(seleccionadas, formato);
   const hojas = paginas.length + paginasFichas.length;
 
   return (
@@ -52,7 +52,7 @@ export default function DialogoImpresion({
                 const m = medidas(f);
                 return (
                   <option key={f.id} value={f.id}>
-                    {f.label} — {m.ancho} × {m.alto} mm
+                    {f.label} — {m.ancho} × {m.alto} mm · {porHoja(f)} por hoja
                   </option>
                 );
               })}
@@ -151,6 +151,12 @@ export default function DialogoImpresion({
             <p className="parrafo">
               Formato seleccionado: <b className="acento">{etiquetaFormato(formato)}</b>. Las medidas
               solo salen exactas si el navegador imprime sin reescalar.
+              {medidasDibujo(formato) && (
+                <>
+                  {" "}El dibujo mide {medidasDibujo(formato).ancho} × {medidasDibujo(formato).alto} mm
+                  y va centrado en el recorte: el papel de más es para plastificar sin tocarlo.
+                </>
+              )}
             </p>
             <dl className="lista-ayuda">
               <div>
