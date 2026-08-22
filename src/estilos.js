@@ -650,6 +650,29 @@ label {
   body { background: white !important; }
   .app-visor, .portada, .detalle, .indice, .modal-fondo, .ampliacion { display: none !important; }
   .hoja-impresion { display: block !important; background: white; }
+  /* La hoja ocupa EXACTAMENTE el ancho de la página, sea el que sea. En 100 %
+     y no en 198 mm a propósito: los 198 salen de restar los 6 mm de @page, pero
+     si en el diálogo los márgenes están en "Predeterminado" el navegador usa
+     los del hardware, que suelen ser mayores; una hoja de 198 mm entonces no
+     cabe, se sale por la izquierda y el navegador reescala el documento entero.
+     Con 100 % no puede desbordar nunca, y el overflow recorta lo que se salga:
+     un fallo visible y local en vez de uno global y silencioso —cartas más
+     pequeñas de lo que dice el formato, con la causa lejos del síntoma.
+     Solo las hojas de CARTAS: los resúmenes son A5 sobre A4 apaisado y miden
+     otra cosa, aunque compartan el contenedor .hoja-impresion. */
+  /* La contención va en cadena, de fuera adentro. Cada eslabón tiene tamaño
+     propio y recorta: así ningún hijo puede ensanchar a su padre y, sobre todo,
+     ninguno puede llegar hasta la página y hacer que el navegador reescale.
+       .hoja-cartas  100 % de la página, recorta
+       .hoja         100 % de la página, recorta
+       .pagina       rejilla de pistas fijas, recorta
+       .celda        64 × 117 mm, recorta
+       la carta      70 × 121 mm con overflow:hidden en línea
+     El eslabón que faltaba era el primero. */
+  .hoja-cartas { width: 100%; box-sizing: border-box; overflow: hidden; }
+  .hoja-cartas .hoja {
+    width: 100%; height: 100vh; box-sizing: border-box; overflow: hidden;
+  }
   .hoja { page-break-after: always; break-after: page; }
   .hoja:last-child { page-break-after: auto; break-after: auto; }
   /* overflow:hidden en la PÁGINA, no solo en la celda. Es el cinturón que

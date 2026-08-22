@@ -27,9 +27,9 @@ export const FORMATOS = [
     // Con 2 quedan 2 mm de holgura, que es lo que salva un redondeo del
     // navegador o una impresora descentrada.
     hueco: 2,
-    // Las fichas de datos se giran 90° y comparten rejilla con el resto: así
-    // miden lo mismo que cualquier otra carta del mazo (64 × 110,6) y una hoja
-    // puede mezclarlas. Apaisadas y sin girar habría que encogerlas un 11 %.
+    // Las fichas de datos se giran 90° y comparten tamaño de rejilla con el
+    // resto. Se paginan aparte para que el navegador no reescale trabajos con
+    // celdas verticales y apaisadas mezcladas en la misma hoja.
     giraFichas: true,
   },
 ];
@@ -119,11 +119,14 @@ export const porHojaFicha = (f) => (f.ficha ? f.ficha.cols * f.ficha.filas : 4);
 export const colsFicha = (f) => (f.ficha ? f.ficha.cols : 1);
 
 export function repartirHojas(cartas, formato = FORMATO_DEF) {
-  // Girando las fichas no hay dos flujos: comparten rejilla con el resto, así
-  // que una misma plancha puede mezclar fichas y cartas.
-  if (formato.giraFichas) return { paginas: chunk(cartas, porHoja(formato)), paginasFichas: [] };
   const fichas = cartas.filter((c) => c.tipo === "datacard");
   const normales = cartas.filter((c) => c.tipo !== "datacard");
+  if (formato.giraFichas) {
+    return {
+      paginas: [...chunk(normales, porHoja(formato)), ...chunk(fichas, porHoja(formato))],
+      paginasFichas: [],
+    };
+  }
   return {
     paginas: chunk(normales, porHoja(formato)),
     paginasFichas: chunk(fichas, porHojaFicha(formato)),

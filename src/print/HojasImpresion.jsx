@@ -30,7 +30,7 @@ export default function HojasImpresion({
   );
 
   return (
-    <div className="hoja-impresion" style={variablesFormato(formato)}>
+    <div className="hoja-impresion hoja-cartas" style={variablesFormato(formato)}>
       {paginas.map((grupo, i) => (
         <Fragment key={i}>
           <div className="hoja">
