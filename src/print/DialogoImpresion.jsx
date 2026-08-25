@@ -7,6 +7,7 @@
 
 import { useState } from "react";
 import CartaFace from "../cards/CartaFace.jsx";
+import CalibracionImpresora from "./CalibracionImpresora.jsx";
 import { etiquetaTipo } from "../data/tipos.js";
 import { FORMATOS, etiquetaFormato, medidas, medidasDibujo, porHoja, repartirHojas } from "./formatos.js";
 
@@ -18,6 +19,10 @@ export default function DialogoImpresion({
   fichas,
   incluirFichas,
   onFichas,
+  impresoras,
+  impresoraId,
+  onImpresora,
+  onImpresoras,
   cartas,
   estaSeleccionada,
   onAlternar,
@@ -71,6 +76,17 @@ export default function DialogoImpresion({
             Añadir hoja de fichas y marcadores recortables (
             {fichas.lista.reduce((n, f) => n + (f.cantidad || 1), 0)} piezas, a tamaño real)
           </label>
+        )}
+
+        {/* La calibración solo mueve las hojas de dorso: sin dorsos no hay nada
+            que casar y el bloque estorbaría. */}
+        {incluirDorsos && (
+          <CalibracionImpresora
+            impresoras={impresoras}
+            impresoraId={impresoraId}
+            onImpresora={onImpresora}
+            onImpresoras={onImpresoras}
+          />
         )}
 
         {hayFiltro && (

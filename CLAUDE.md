@@ -86,9 +86,30 @@ plantilla en `.env.example`:
 Las barajas de tipo `resumenes` no traen `cartas` sino `hojas`: hojas **A5
 verticales de 140 × 198 mm** para consulta en mesa, no un mazo. `App.jsx` ramifica
 en `esResumenes(mazo.tipo)` y pinta `viewer/VisorResumenes.jsx` (previsualización
-a escala + selección + imprimir) en lugar de la tira, el detalle y el diálogo. Se
-imprimen **dos en fila sobre un A4 apaisado**, para cortar por la vertical
-central, con `print/HojasResumen.jsx` y la rejilla `.pagina-a5`.
+a escala + selección) en lugar de la tira y el detalle. Se imprimen **dos en fila
+sobre un A4 apaisado**, para cortar por la vertical central, con
+`print/HojasResumen.jsx` y la rejilla `.pagina-a5`.
+
+Imprimir abre `print/DialogoImpresionResumen.jsx`, el gemelo del diálogo del
+mazo: misma selección (títulos o miniaturas, con `.sel-a5` para reducir la hoja
+al 18 %) y misma ayuda de ajustes, pero **una hoja A5 no tiene tamaños que
+elegir**, así que en el sitio del formato va la casilla **«colocar para imprimir
+a doble cara»**. Marcada, `HojasResumen` gira 180° las páginas **pares**
+(`.hoja-a5-girada`) para la segunda pasada: imprimir las pares, girar el taco por
+el lateral, y volver a lanzar las impares. El giro es de la página entera sobre
+el centro del papel —por eso la regla necesita `height: 100vh`—, no hoja a hoja.
+
+**Y cambia el orden de las hojas**, que es la otra mitad del asunto: lo que se
+corta es una tarjeta de dos caras, y las dos caras de una tarjeta no están una al
+lado de la otra sino una detrás de la otra. `paginar()` reparte cada grupo de
+cuatro entre las dos caras del mismo folio —`1 | 3` delante, `4 | 2` detrás—, de
+modo que al cortar por la vertical central cada A5 lleva la hoja *n* por una cara
+y la *n+1* por la otra. En orden de envío eso es 1, 3, 4, 2, 5, 7, 8, 6… La cara
+B va **cruzada** porque el giro de 180° cambia de lado sus dos hojas; sin cruzar,
+detrás de la 1 caería la 4. Las ranuras que sobran en el último grupo se
+devuelven como `undefined` y se pintan como celda vacía: colapsarlas movería a su
+compañera al lado que no es. El diálogo cuenta páginas con esa misma función, no
+dividiendo entre dos.
 
 La previsualización está al 55% y ahí no se lee: **al pulsar una hoja se abre
 ampliada** (`viewer/HojaAmpliada.jsx` sobre `viewer/Ampliacion.jsx`), ajustada al
@@ -166,6 +187,31 @@ tamaños sí se respeta: un marcador de 25 mm se ve mayor que una ficha de 20. E
 `.etiqueta-hoja`) viven **fuera** de `@media print`; moverlos dentro rompería la
 pantalla. El botón sale en el visor normal y en el de resúmenes, y mirar las
 fichas no las mete en la impresión: eso sigue siendo `incluirFichas`.
+
+## Calibración de impresora
+
+Casi ninguna impresora centra el papel igual por las dos caras, así que los
+dorsos caen desplazados respecto a su anverso. Eso **no se puede arreglar desde
+el diálogo del navegador**: sus márgenes se aplican a todas las páginas por
+igual, y aquí hay que mover solo una de las dos caras. Tampoco vale una
+constante en el código: el desvío es de la máquina, y quien imprime puede tener
+más de una.
+
+`print/impresoras.js` guarda por eso una lista de **perfiles con nombre** en
+`localStorage` (`kt-impresoras-v1`, más `kt-impresora-v1` con el elegido), cada
+uno con su desvío `x`/`y` en milímetros y **con el signo en la dirección en la
+que hay que devolver el dorso**: si sale 7 mm a la izquierda, `x = 7`. Se topa a
+±20 mm —más que eso es un dedazo, no una impresora— y un `localStorage` ilegible
+o bloqueado devuelve «sin calibrar» en vez de romper la impresión.
+
+Lo edita `print/CalibracionImpresora.jsx`, que comparten los dos diálogos, y
+solo aparece cuando hay una segunda cara que casar: con `incluirDorsos` en el
+mazo, con `dobleCara` en los resúmenes. El desvío llega al CSS como
+`--desvio-dorso-x/y` (por `variablesFormato()` en las cartas, en línea en
+`HojasResumen`) y lo aplican `.pagina-dorso`, `.pagina-ficha-dorso` y
+`.hoja-a5-girada`. En esta última el `translate` va **antes** del `rotate(180deg)`
+para que los milímetros sean los del papel y no los del marco ya girado, donde
+irían al revés.
 
 ## Navegación
 

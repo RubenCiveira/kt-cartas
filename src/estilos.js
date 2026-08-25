@@ -59,13 +59,13 @@ body { background: var(--fondo); color: var(--texto); margin: 0; }
 .error { color: var(--error); }
 
 /* ---------- Controles comunes ---------- */
-input[type="text"], input[type="email"], input[type="password"], select {
+input[type="text"], input[type="email"], input[type="password"], input[type="number"], select {
   background: #182233; color: #DDE6F0; border: 1px solid var(--linea);
   border-radius: 6px; padding: 7px 9px; font-size: 14px; width: 100%;
   font-family: 'Barlow', sans-serif; box-sizing: border-box;
 }
 input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focus,
-select:focus { outline: 2px solid var(--acento); outline-offset: 0; }
+input[type="number"]:focus, select:focus { outline: 2px solid var(--acento); outline-offset: 0; }
 label {
   display: block; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
   color: var(--tenue); margin: 10px 0 4px; font-family: 'Barlow Condensed', sans-serif;
@@ -540,12 +540,33 @@ label {
 .sel-lienzo { width: calc(70mm * 0.36); height: calc(121mm * 0.36); overflow: hidden; }
 .sel-lienzo > * { transform: scale(0.36); transform-origin: top left; }
 .sel-carta.apaisada .sel-lienzo { width: calc(121mm * 0.36); height: calc(70mm * 0.36); }
+/* Una hoja A5 en la rejilla de selección: mucho más reducida que una carta, o
+   dos filas no caben en la caja. No se lee, y no hace falta: para leerla está
+   la ampliación del visor. */
+.sel-carta.sel-a5 .sel-lienzo { width: calc(140mm * 0.18); height: calc(198mm * 0.18); }
+.sel-carta.sel-a5 .sel-lienzo > * { transform: scale(0.18); }
 .sel-marca {
   position: absolute; top: 3px; right: 3px; width: 16px; height: 16px;
   border-radius: 4px; background: rgba(14, 20, 32, 0.8); border: 1px solid var(--linea);
   color: var(--acento); font-size: 11px; line-height: 14px; text-align: center;
 }
 .sel-carta.activa .sel-marca { border-color: var(--acento); }
+
+/* Calibración de impresora: va dentro del diálogo, encuadrada, porque es un
+   ajuste de la máquina y no de la tirada; leerlo como bloque aparte evita
+   confundirlo con lo que sí cambia de una impresión a otra. */
+.calibracion {
+  margin-top: 14px; padding: 10px 12px; border-radius: 8px;
+  background: var(--fondo); border: 1px solid var(--linea);
+}
+.calibracion-fila {
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;
+}
+.calibracion-fila + .calibracion-fila { margin-top: 10px; }
+/* Un desvío son dos dígitos y un decimal; un campo del ancho del nombre solo
+   sirve para desequilibrar la fila. Lo justo para "-12,5" y su flechita. */
+.campo-mm { width: 86px; flex: none; }
+.campo-mm label { white-space: nowrap; }
 
 .lista-ayuda { margin: 14px 0 0; display: grid; gap: 10px; }
 .lista-ayuda dt {
@@ -677,19 +698,18 @@ label {
   .hoja:last-child { page-break-after: auto; break-after: auto; }
   /* overflow:hidden en la PÁGINA, no solo en la celda. Es el cinturón que
      impide que nada vuelva a ensanchar la hoja: basta con que un hijo se salga
-     —y el sangrado del dorso se sale a propósito— para que el navegador decida
-     que la página no cabe en el A4 y la encoja entera. El precio es que el
-     sangrado de la fila y la columna exteriores se recorta contra el borde del
-     papel; el de dentro, que es el que importa para casar cara y dorso, se
-     conserva. */
+     —el desvío de calibración del dorso, por ejemplo— para que el navegador
+     decida que la página no cabe en el A4 y la encoja entera. */
   .pagina, .pagina-ficha { overflow: hidden; }
   /* Calibración de impresora. Casi ninguna centra el papel igual por las dos
      caras: si el anverso sale con 9 mm a la izquierda y 5 a la derecha, al
      voltear el folio el dorso necesita 5 y 9, o no cae detrás de su carta.
-     --desvio-dorso mueve SOLO las hojas de dorso; con 0 no hace nada, que es lo
-     correcto mientras no se mida una impresora concreta. Se ajusta en
-     print/formatos.js, no aquí. */
-  .pagina-dorso, .pagina-ficha-dorso { transform: translateX(var(--desvio-dorso, 0mm)); }
+     Mueve SOLO las hojas de dorso; con 0 no hace nada. Lo elige el usuario por
+     impresora en el diálogo de imprimir (print/impresoras.js), y llega como
+     variable desde print/formatos.js. */
+  .pagina-dorso, .pagina-ficha-dorso {
+    transform: translate(var(--desvio-dorso-x, 0mm), var(--desvio-dorso-y, 0mm));
+  }
   .pagina {
     display: grid;
     grid-template-columns: repeat(var(--cols, 2), var(--celda-ancho));
@@ -727,17 +747,14 @@ label {
   .celda-girada > * {
     transform: translateY(var(--aire, 0mm)) scale(var(--esc)) translateX(70mm) rotate(90deg);
   }
-  /* SANGRADO DEL DORSO. Al imprimir a doble cara las dos caras nunca casan al
-     milímetro, y si el dibujo del dorso acaba justo en la línea de corte, un
-     desvío deja un reborde blanco. Aquí el dorso se dibuja 1 mm más grande por
-     cada lado y se recoloca -1 mm, así que queda centrado en el mismo sitio y
-     lo que sobra se va al hueco entre cartas, que para eso está. El anverso no
-     lo lleva: es el que marca dónde se corta. */
-  .celda-dorso { overflow: visible; }
-  .celda-dorso > * {
-    transform: translate(-1mm, calc(var(--aire, 0mm) - 1mm))
-      scale(calc(var(--esc) * var(--dorso-x)), calc(var(--esc) * var(--dorso-y)));
-  }
+  /* EL DORSO MIDE LO MISMO QUE EL ANVERSO. Hubo un sangrado —el dorso 1 mm más
+     grande por lado, para que un desvío de la impresora no dejara reborde
+     blanco al cortar—, y en papel no salía bien: se probó y se quitó. Así que
+     el dorso no tiene transform propia y hereda la de .celda > *; lo único que
+     lo distingue es el desvío de calibración de .pagina-dorso. Si alguna vez
+     vuelve el sangrado, tendrá que volver también el overflow:visible de la
+     celda y el repintado de la línea de corte, que es lo que hacía falta para
+     que el dibujo de más no tapara por dónde se corta. */
   /* El dorso de una ficha girada rota al REVÉS que su anverso (-90° en vez de
      +90°). Suena raro pero es lo que hace que, al dar la vuelta al papel, el
      dibujo del dorso quede en el mismo sentido que la cara: el giro del folio
@@ -746,20 +763,8 @@ label {
      70 mm es en el anverso: al rotar sobre la esquina, el bloque se va hacia
      arriba y hay que bajarlo su nuevo alto. */
   .celda-dorso.celda-girada > * {
-    transform: translate(-1mm, calc(var(--aire, 0mm) - 1mm))
-      scale(calc(var(--esc) * var(--dorso-x)), calc(var(--esc) * var(--dorso-y)))
+    transform: translateY(var(--aire, 0mm)) scale(var(--esc))
       translateY(121mm) rotate(-90deg);
-  }
-  .celda-ficha.celda-dorso > * {
-    transform: translate(-1mm, -1mm)
-      scale(calc(var(--esc-ficha) * var(--dorso-fx)), calc(var(--esc-ficha) * var(--dorso-fy)));
-  }
-  /* La línea de corte se repinta encima: el sangrado la taparía justo en el
-     milímetro por el que hay que cortar. */
-  .celda-dorso { outline: none; }
-  .celda-dorso::after {
-    content: ""; position: absolute; inset: 0; z-index: 3;
-    outline: 0.2mm dashed #999; pointer-events: none;
   }
   .pagina-ficha {
     display: grid;
@@ -796,6 +801,21 @@ label {
     gap: 4mm; justify-content: center; align-content: start;
   }
   .celda-a5 { width: 140mm; height: 198mm; overflow: hidden; }
+  /* Colocación para doble cara: la página par se gira entera 180° sobre el
+     centro del papel, no hoja a hoja. Por eso necesita el alto de la página
+     (100vh) y recortar: sin alto propio la caja mide lo que su contenido y el
+     giro la dejaría descolocada respecto al folio, que es justo lo que tiene
+     que casar con la cara ya impresa. */
+  /* La calibración de la impresora se aplica aquí igual que en las hojas de
+     dorso del mazo, y por la misma razón: la cara B es la que se imprime sobre
+     un folio ya volteado. El translate va ANTES del rotate para que sea en el
+     marco de la página —lo que el usuario mide sobre el papel— y no en el
+     marco ya girado, donde 7 mm a la derecha serían 7 a la izquierda. */
+  .hoja-a5-girada {
+    height: 100vh; box-sizing: border-box; overflow: hidden;
+    transform: translate(var(--desvio-dorso-x, 0mm), var(--desvio-dorso-y, 0mm))
+      rotate(180deg);
+  }
   /* La plancha de fichas se estiliza fuera de @media print (ver arriba): es la
      misma en papel y en la ampliación de pantalla. */
 }

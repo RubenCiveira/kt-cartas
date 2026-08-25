@@ -40,12 +40,12 @@ export default function VisorResumenes({
             )}
             <button className="btn btn-mini" onClick={onTodas}>Todas</button>
             <button className="btn btn-mini" onClick={onNinguna}>Ninguna</button>
-            <button
-              className="btn btn-primario btn-mini"
-              onClick={onImprimir}
-              disabled={!marcadas.length}
-            >
-              Imprimir {marcadas.length} hoja(s)
+            {/* Abre el diálogo, no la impresora: la selección y la colocación a
+                doble cara se deciden ahí, así que el botón no puede estar
+                desactivado por no haber nada marcado —desde el diálogo se
+                marca—. */}
+            <button className="btn btn-primario btn-mini" onClick={onImprimir}>
+              Imprimir {marcadas.length} hoja(s)…
             </button>
             <MenuUsuario usuario={usuario} avatarUrl={avatarUrl} onLogout={onLogout} />
           </div>

@@ -8,7 +8,7 @@ import HojaFichas from "./HojaFichas.jsx";
 import { colsFicha, espejarFilas, etiquetaFormato, medidas, repartirHojas, variablesFormato } from "./formatos.js";
 
 export default function HojasImpresion({
-  cartas, formato, incluirDorsos, nombreMazo, icono, fichas, incluirFichas,
+  cartas, formato, incluirDorsos, nombreMazo, icono, fichas, incluirFichas, desvio,
 }) {
   const { paginas, paginasFichas } = repartirHojas(cartas, formato);
   const etiqueta = etiquetaFormato(formato);
@@ -30,7 +30,7 @@ export default function HojasImpresion({
   );
 
   return (
-    <div className="hoja-impresion hoja-cartas" style={variablesFormato(formato)}>
+    <div className="hoja-impresion hoja-cartas" style={variablesFormato(formato, desvio)}>
       {paginas.map((grupo, i) => (
         <Fragment key={i}>
           <div className="hoja">

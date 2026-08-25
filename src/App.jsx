@@ -15,10 +15,18 @@ import { cargarBarajasRemotas, crearBarajaLocal, resolverMazo } from "./data/dec
 import { esResumenes } from "./data/tipos-baraja.js";
 import { completeVerification, getSessionUser, login, loginWithGoogle, logout, register, requestAccessReview, sendVerification, userAvatarUrl } from "./appwrite.js";
 import { getFormato, STORAGE_KEY_FORMATO } from "./print/formatos.js";
+import {
+  desvioDe,
+  guardarImpresoraActiva,
+  guardarImpresoras,
+  leerImpresoraActiva,
+  leerImpresoras,
+} from "./print/impresoras.js";
 import { escribirHash, leerHash } from "./estado-url.js";
 import HojasImpresion from "./print/HojasImpresion.jsx";
 import HojasResumen from "./print/HojasResumen.jsx";
 import DialogoImpresion from "./print/DialogoImpresion.jsx";
+import DialogoImpresionResumen from "./print/DialogoImpresionResumen.jsx";
 import VisorResumenes from "./viewer/VisorResumenes.jsx";
 import HojaAmpliada from "./viewer/HojaAmpliada.jsx";
 import FichasAmpliadas from "./viewer/FichasAmpliadas.jsx";
@@ -92,12 +100,20 @@ export default function VisorCartasKT() {
   const [narrando, setNarrando] = useState(false);
   const [incluirDorsos, setIncluirDorsos] = useState(true);
   const [incluirFichas, setIncluirFichas] = useState(false);
+  // Solo para resúmenes: gira las páginas pares para la segunda pasada de una
+  // impresión a doble cara (ver print/HojasResumen.jsx).
+  const [dobleCara, setDobleCara] = useState(false);
   const [usuario, setUsuario] = useState(null);
   const [barajas, setBarajas] = useState([]);
   const [barajasLocales, setBarajasLocales] = useState([]);
   const [estadoCarga, setEstadoCarga] = useState("sesion");
   const [errorCarga, setErrorCarga] = useState("");
   const [infoAcceso, setInfoAcceso] = useState("");
+  // Calibración de impresora: perfiles con nombre y desvío del dorso, guardados
+  // en este navegador. Es de la máquina, no de la baraja, así que sobrevive a
+  // cambiar de mazo y a recargar.
+  const [impresoras, setImpresoras] = useState(leerImpresoras);
+  const [impresoraId, setImpresoraId] = useState(leerImpresoraActiva);
   const [formatoId, setFormatoId] = useState(() => {
     try {
       return getFormato(localStorage.getItem(STORAGE_KEY_FORMATO)).id;
@@ -207,6 +223,10 @@ export default function VisorCartasKT() {
       localStorage.setItem(STORAGE_KEY_FORMATO, formatoId);
     } catch (e) { /* almacenamiento no disponible */ }
   }, [formatoId]);
+
+  useEffect(() => { guardarImpresoras(impresoras); }, [impresoras]);
+  useEffect(() => { guardarImpresoraActiva(impresoraId); }, [impresoraId]);
+  const desvio = desvioDe(impresoras, impresoraId);
 
   // Cambiar de baraja reinicia lo que es propio de una baraja. Va aquí y no en
   // un efecto sobre mazoActivo porque, como efecto, se dispararía también
@@ -365,6 +385,7 @@ export default function VisorCartasKT() {
   // colisionan ("c0" frente a "h0") y una baraja nunca trae de los dos tipos.
   const desmarcarTodo = () => setExcluidas([...cartas, ...hojas].map((x) => x.id));
   const invertirTodo = () => setExcluidas(cartas.filter((c) => estaSeleccionada(c.id)).map((c) => c.id));
+  const invertirHojas = () => setExcluidas(hojas.filter((h) => estaSeleccionada(h.id)).map((h) => h.id));
 
   const abrirDetalle = (id) => {
     flushSync(() => setTransicionId(id));
@@ -508,7 +529,7 @@ export default function VisorCartasKT() {
           onAlternar={alternar}
           onTodas={marcarTodo}
           onNinguna={desmarcarTodo}
-          onImprimir={() => window.print()}
+          onImprimir={() => setDialogo(true)}
           onAmpliar={setHojaAmpliada}
           hayFichas={!!fichas}
           onFichas={() => setVerFichas(true)}
@@ -526,9 +547,29 @@ export default function VisorCartasKT() {
         {verFichas && fichas && (
           <FichasAmpliadas fichas={fichas} nombreMazo={nombreMazo} onCerrar={() => setVerFichas(false)} />
         )}
+        {dialogo && (
+          <DialogoImpresionResumen
+            dobleCara={dobleCara}
+            onDobleCara={setDobleCara}
+            impresoras={impresoras}
+            impresoraId={impresoraId}
+            onImpresora={setImpresoraId}
+            onImpresoras={setImpresoras}
+            hojas={hojas}
+            estaSeleccionada={estaSeleccionada}
+            onAlternar={alternar}
+            onTodas={marcarTodo}
+            onNinguna={desmarcarTodo}
+            onInvertir={invertirHojas}
+            onCerrar={() => setDialogo(false)}
+            onImprimir={() => window.print()}
+          />
+        )}
         <HojasResumen
           hojas={hojas.filter((h) => estaSeleccionada(h.id))}
           nombreMazo={nombreMazo}
+          dobleCara={dobleCara}
+          desvio={desvio}
         />
       </>
     );
@@ -617,6 +658,10 @@ export default function VisorCartasKT() {
           fichas={fichas}
           incluirFichas={incluirFichas}
           onFichas={setIncluirFichas}
+          impresoras={impresoras}
+          impresoraId={impresoraId}
+          onImpresora={setImpresoraId}
+          onImpresoras={setImpresoras}
           cartas={cartas}
           estaSeleccionada={estaSeleccionada}
           onAlternar={alternar}
@@ -639,6 +684,7 @@ export default function VisorCartasKT() {
         icono={iconoMazoUrl}
         fichas={fichas}
         incluirFichas={incluirFichas}
+        desvio={desvio}
       />
     </>
   );

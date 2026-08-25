@@ -11,6 +11,8 @@
 // proporcional (64 × 110,6) y lo que crece es el papel alrededor, que es lo que
 // necesita una plastificadora térmica para sellar sin comerse el diseño.
 
+import { SIN_DESVIO } from "./impresoras.js";
+
 export const STORAGE_KEY_FORMATO = "kt-formato-v1";
 
 export const FORMATOS = [
@@ -34,12 +36,6 @@ export const FORMATOS = [
   },
 ];
 
-// Desvío horizontal de las hojas de dorso, en mm. Corrige que una impresora no
-// centre igual las dos caras del folio: mide el margen izquierdo del anverso y
-// el del dorso impresos, y pon aquí la mitad de la diferencia con el signo que
-// haga falta. 0 = sin corrección, que es lo que vale para la mayoría.
-export const DESVIO_DORSO_MM = 0;
-
 export const FORMATO_DEF = FORMATOS[0];
 
 export const getFormato = (id) => FORMATOS.find((f) => f.id === id) || FORMATO_DEF;
@@ -61,9 +57,12 @@ export const porHoja = (f) => (f.cols || 2) * (f.filas || 2);
 
 // Las variables que la hoja de impresión le pasa al CSS. El aire sobrante se
 // reparte arriba y abajo para que el dibujo quede centrado en su recorte.
-export function variablesFormato(f) {
+// `desvio` es la calibración de la impresora elegida (ver print/impresoras.js);
+// mueve solo las hojas de dorso, y con {x:0,y:0} no hace nada.
+export function variablesFormato(f, desvio = SIN_DESVIO) {
   const v = {
-    "--desvio-dorso": DESVIO_DORSO_MM + "mm",
+    "--desvio-dorso-x": (desvio.x || 0) + "mm",
+    "--desvio-dorso-y": (desvio.y || 0) + "mm",
     "--esc": f.esc,
     // El 0,95 existe para que quepan cuatro fichas apaisadas en un A4. Girada,
     // una ficha tiene que medir lo mismo que sus compañeras de hoja.
@@ -72,18 +71,9 @@ export function variablesFormato(f) {
     "--cols-ficha": f.ficha ? f.ficha.cols : 1,
   };
   if (f.hueco) v["--hueco"] = f.hueco + "mm";
-  // Sangrado del dorso: 1 mm por lado. No se mueve el dibujo, se agranda desde
-  // su esquina y luego se recoloca, así que sigue centrado en su recorte. Los
-  // factores son distintos en cada eje porque 1 mm sobre 64 no es lo mismo que
-  // 1 mm sobre 110: uniforme dejaría un lado corto y el otro invadiendo la fila
-  // de al lado.
-  const anchoCelda = f.celda ? f.celda.ancho : 70 * f.esc;
-  const altoDibujo = 121 * f.esc;
-  v["--dorso-x"] = (anchoCelda + 2) / anchoCelda;
-  v["--dorso-y"] = (altoDibujo + 2) / altoDibujo;
-  const escF = f.giraFichas ? f.esc : f.esc * 0.95;
-  v["--dorso-fx"] = (121 * escF + 2) / (121 * escF);
-  v["--dorso-fy"] = (70 * escF + 2) / (70 * escF);
+  // El dorso no tiene variables propias: se imprime con la misma escala y la
+  // misma caja que el anverso. Lo único suyo es el desvío de calibración, que es
+  // calibración de impresora, no maquetación.
   if (f.celda) {
     v["--celda-ancho"] = f.celda.ancho + "mm";
     v["--celda-alto"] = f.celda.alto + "mm";
