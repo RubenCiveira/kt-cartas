@@ -45,6 +45,7 @@ export default function DetalleCarta({
   icono,
   seleccionada,
   onAlternar,
+  onAMazo,
   onCerrar,
   onAnterior,
   onSiguiente,
@@ -87,6 +88,18 @@ export default function DetalleCarta({
           >
             {seleccionada ? "✓ En la impresión" : "Añadir a la impresión"}
           </button>
+          {/* Dos cosas distintas y por eso dos botones: la de arriba dice si
+              esta carta entra en la tirada de SU baraja; esta la aparta en un
+              mazo de impresión, que se imprime aparte y mezcla barajas. */}
+          {onAMazo && (
+            <button
+              className="btn btn-mini"
+              onClick={() => onAMazo(carta.id)}
+              title="Guardar esta carta en un mazo de impresión para reimprimirla luego"
+            >
+              A imprimir…
+            </button>
+          )}
           {HAY_VOZ && (
             <button
               className={"btn btn-mini" + (narrando ? " activa" : "")}

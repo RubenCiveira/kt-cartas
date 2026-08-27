@@ -188,6 +188,44 @@ tamaños sí se respeta: un marcador de 25 mm se ve mayor que una ficha de 20. E
 pantalla. El botón sale en el visor normal y en el de resúmenes, y mirar las
 fichas no las mete en la impresión: eso sigue siendo `incluirFichas`.
 
+## Mazos de impresión
+
+Listas de cartas **de varias barajas** que el usuario arma para reimprimir de
+una tacada: una carta que se ha estropeado, otra que se ha quedado
+desactualizada. Sin ellos, reimprimir tres cartas de tres facciones son tres
+tiradas y tres hojas casi vacías.
+
+Viven en Appwrite, no en `localStorage`, para que el mazo sea el mismo en el
+portátil y en el móvil que tienes al lado de la impresora: tabla `print_decks`
+de `kt_cartas`, una fila por mazo, con `rowSecurity` y permisos por fila (solo
+su dueño lee, cambia y borra). El cliente está en `src/appwrite.js`
+(`listarMazosImpresion`, `crearMazoImpresion`, `guardarMazoImpresion`,
+`borrarMazoImpresion`) y **la tabla hay que publicarla** desde `app-write/` con
+`appwrite --all --force push tables`; hasta entonces la pantalla avisa de que
+falta en vez de dar un error suelto.
+
+`data/mazos-impresion.js` tiene el modelo y el hook `useMazosImpresion()`. Un
+mazo guarda **referencias**, no copias: `"faccion:novitiates|c12"`. Es lo que
+hace que una carta corregida en su JSON salga corregida al reimprimirla, que es
+justo para lo que existe el mazo. El precio es que una carta puede desaparecer
+de su baraja —al reeditarla se renumeran los ids—; esa referencia queda
+huérfana, y la pantalla la enseña con su id para poder quitarla a sabiendas, en
+vez de desaparecer en silencio y descuadrar el recuento.
+
+La pantalla es `viewer/MazosImpresion.jsx` (`#imprimir=<id>`, y `#imprimir=1` la
+lista), y se llega desde la portada. Las cartas se añaden con el popup
+`viewer/AnadirAMazo.jsx`, que abren el detalle de una carta («A imprimir…») y el
+diálogo de imprimir con lo que esté marcado. Añadir no duplica: un mazo es una
+lista de qué reimprimir, y pedir dos veces la misma carta es un descuido.
+
+Imprimir reutiliza `DialogoImpresion` y `HojasImpresion` tal cual —formato,
+dorsos, calibración—, con una diferencia: cada carta se lleva su baraja en
+`origen`, y `dorsoDe()` pinta **el dorso de su baraja**, no uno común. En un mazo
+mezclado no hay nombre ni icono compartido que poner detrás. Por lo mismo, el
+`id` de una carta dentro del mazo es su referencia entera: dos barajas usan `c3`
+las dos, y las hojas necesitan ids únicos dentro de la tirada (y así comparten
+sin chocar el registro de exclusiones con las cartas de las barajas).
+
 ## Calibración de impresora
 
 Casi ninguna impresora centra el papel igual por las dos caras, así que los

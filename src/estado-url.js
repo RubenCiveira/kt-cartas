@@ -10,6 +10,11 @@
 //
 //   #grupo=equipos
 //
+// Y los mazos de impresión son su propia pantalla, con el mazo abierto (o
+// vacío, que es la lista):
+//
+//   #imprimir=68f0…
+//
 // Se escribe con replaceState a propósito: si cada carta abierta dejara una
 // entrada en el historial, el botón «atrás» tardaría veinte pulsaciones en
 // sacarte de la aplicación.
@@ -25,7 +30,12 @@ export function leerHash() {
   const crudo = (window.location.hash || "").replace(/^#/, "");
   const p = new URLSearchParams(crudo);
   const grupo = p.get("grupo");
+  const imprimir = p.get("imprimir");
   return {
+    // "1" es la lista de mazos; cualquier otra cosa, el id de uno concreto. El
+    // id no se valida aquí: hasta que no llegan los mazos del usuario no se
+    // sabe si existe, y de eso se encarga la pantalla.
+    imprimir: imprimir === null ? null : imprimir || "1",
     baraja: p.get("baraja") || null,
     grupo: esTipoBaraja(grupo) ? grupo : null,
     tipos: (p.get("tipos") || "").split(",").filter((t) => IDS_TIPO.has(t)),
@@ -33,10 +43,13 @@ export function leerHash() {
   };
 }
 
-export function componerHash({ baraja, grupo, tipos, carta }) {
+export function componerHash({ imprimir, baraja, grupo, tipos, carta }) {
   // A mano en vez de con URLSearchParams: sus claves de baraja llevan ":" y
   // acabarían como "%3A", que convierte un enlace legible en un jeroglífico.
   const partes = [];
+  // La pantalla de mazos de impresión sustituye a todo lo demás: no se está
+  // viendo una baraja mientras se monta un mazo.
+  if (imprimir) return "imprimir=" + imprimir;
   if (baraja) partes.push("baraja=" + baraja);
   // El grupo es estado de la portada: con una baraja abierta no pinta nada.
   if (!baraja && grupo) partes.push("grupo=" + grupo);

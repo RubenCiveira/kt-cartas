@@ -32,6 +32,7 @@ export default function DialogoImpresion({
   seleccionadas,
   total,
   hayFiltro,
+  onAMazo,
   onCerrar,
   onImprimir,
 }) {
@@ -118,6 +119,14 @@ export default function DialogoImpresion({
           <button className="btn btn-mini" onClick={onTodas}>Seleccionar todas</button>
           <button className="btn btn-mini" onClick={onNinguna}>Seleccionar ninguna</button>
           <button className="btn btn-mini" onClick={onInvertir}>Invertir selección</button>
+          {/* Guardar la selección en un mazo de impresión, en vez de tirarla
+              ahora: es la forma rápida de apartar media docena de cartas de
+              esta baraja para una reimpresión que junte varias. */}
+          {onAMazo && (
+            <button className="btn btn-mini" onClick={onAMazo} disabled={!seleccionadas.length}>
+              Guardar en un mazo de impresión…
+            </button>
+          )}
         </div>
 
         <div className="caja-seleccion">

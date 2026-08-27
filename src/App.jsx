@@ -12,6 +12,7 @@ import estilos, { estilosResumen } from "./estilos.js";
 import { useAssetUrl, useIconoBarajaUrl } from "./assets.js";
 import { TIPOS } from "./data/tipos.js";
 import { cargarBarajasRemotas, crearBarajaLocal, resolverMazo } from "./data/decks.js";
+import { cartasParaImprimir, refDe, useMazosImpresion } from "./data/mazos-impresion.js";
 import { esResumenes } from "./data/tipos-baraja.js";
 import { completeVerification, getSessionUser, login, loginWithGoogle, logout, register, requestAccessReview, sendVerification, userAvatarUrl } from "./appwrite.js";
 import { getFormato, STORAGE_KEY_FORMATO } from "./print/formatos.js";
@@ -35,6 +36,8 @@ import MiniCarta from "./viewer/MiniCarta.jsx";
 import DetalleCarta from "./viewer/DetalleCarta.jsx";
 import Indice from "./viewer/Indice.jsx";
 import Portada from "./viewer/Portada.jsx";
+import MazosImpresion from "./viewer/MazosImpresion.jsx";
+import AnadirAMazo from "./viewer/AnadirAMazo.jsx";
 import useDock from "./viewer/useDock.js";
 import useNarrador from "./viewer/narracion.js";
 
@@ -94,6 +97,10 @@ export default function VisorCartasKT() {
   // pantalla, no un sitio al que volver.
   const [hojaAmpliada, setHojaAmpliada] = useState(null);
   const [verFichas, setVerFichas] = useState(false);
+  // Mazos de impresión: `mazoImpresion` es la pantalla ("1" = la lista, o el id
+  // de uno abierto) y `aMazo` las referencias que espera el popup de añadir.
+  const [mazoImpresion, setMazoImpresion] = useState(inicial.imprimir);
+  const [aMazo, setAMazo] = useState(null);
   // Carta a la que hay que saltar desde el índice o el buscador; se resuelve en
   // un efecto porque puede exigir quitar antes el filtro y esperar al repintado.
   const [aCentrar, setACentrar] = useState(inicial.carta);
@@ -228,6 +235,35 @@ export default function VisorCartasKT() {
   useEffect(() => { guardarImpresoraActiva(impresoraId); }, [impresoraId]);
   const desvio = desvioDe(impresoras, impresoraId);
 
+  // Mazos de impresión del usuario (en Appwrite, ver data/mazos-impresion.js)
+  const mazosImpresion = useMazosImpresion(usuario);
+  const mazoImpresionAbierto = mazosImpresion.mazos.find((m) => m.id === mazoImpresion) || null;
+  // Las cartas del mazo abierto, ya resueltas contra las barajas cargadas. Se
+  // recalculan con las barajas porque una carta corregida en su JSON tiene que
+  // salir corregida aquí: el mazo guarda referencias, no copias.
+  const cartasImpresion = useMemo(
+    () => (mazoImpresionAbierto ? cartasParaImprimir(mazoImpresionAbierto.refs, todasBarajas) : VACIO),
+    [mazoImpresionAbierto, todasBarajas]
+  );
+  // Contra `excluidas` y no contra estaSeleccionada(), que se declara más
+  // abajo: las cartas de un mazo de impresión llevan por id su referencia
+  // entera ("faccion:x|c3"), así que comparten registro de exclusiones con las
+  // de las barajas sin poder chocar con ellas.
+  const seleccionImpresion = cartasImpresion.filter((c) => !excluidas.includes(c.id));
+
+  const abrirMazos = (id = "1") => {
+    setMazoImpresion(id);
+    setDialogo(false);
+    setDetalleId(null);
+    setNarrando(false);
+  };
+
+  // Añadir cartas a un mazo: el popup recibe ya las referencias, que es lo
+  // único que el mazo guarda. Desde el detalle es una; desde el diálogo de
+  // imprimir, todas las marcadas.
+  const abrirAMazo = (ids) =>
+    setAMazo(ids.map((id) => refDe(mazoActivo, id)));
+
   // Cambiar de baraja reinicia lo que es propio de una baraja. Va aquí y no en
   // un efecto sobre mazoActivo porque, como efecto, se dispararía también
   // cuando la baraja llega desde la URL y borraría el filtro de esa misma URL.
@@ -329,13 +365,14 @@ export default function VisorCartasKT() {
 
   // Reflejar el estado en la URL
   useEffect(() => {
-    escribirHash({ baraja: mazoActivo, grupo, tipos: filtro, carta: detalleId });
-  }, [mazoActivo, grupo, filtro, detalleId]);
+    escribirHash({ imprimir: mazoImpresion, baraja: mazoActivo, grupo, tipos: filtro, carta: detalleId });
+  }, [mazoImpresion, mazoActivo, grupo, filtro, detalleId]);
 
   // Y al revés: alguien pega una URL o usa atrás/adelante
   useEffect(() => {
     const alCambiarHash = () => {
       const h = leerHash();
+      setMazoImpresion(h.imprimir);
       if (h.baraja !== mazoActivo) {
         setMazoActivo(h.baraja);
         setExcluidas([]);
@@ -497,6 +534,79 @@ export default function VisorCartasKT() {
     return <PantallaEstado texto={errorCarga} accion="Reintentar" onAccion={reintentarCarga} />;
   }
 
+  // Los mazos de impresión son su propia pantalla: no son una baraja del
+  // bucket, son una lista del usuario, y se imprimen con el diálogo de siempre.
+  if (mazoImpresion) {
+    return (
+      <>
+        <style>{estilos}</style>
+        <MazosImpresion
+          mazos={mazosImpresion.mazos}
+          mazoId={mazoImpresionAbierto ? mazoImpresionAbierto.id : ""}
+          onMazo={setMazoImpresion}
+          barajas={todasBarajas}
+          estado={mazosImpresion.estado}
+          error={mazosImpresion.error}
+          onCrear={(nombre) => mazosImpresion.crear(nombre).then((m) => m && setMazoImpresion(m.id))}
+          onRenombrar={(id, nombre) => mazosImpresion.guardar(id, { nombre })}
+          onBorrar={(id) => mazosImpresion.borrar(id).then(() => setMazoImpresion("1"))}
+          onQuitar={mazosImpresion.quitar}
+          onImprimir={() => setDialogo(true)}
+          onInicio={() => setMazoImpresion(null)}
+          onIrABaraja={(clave, cartaId) => {
+            setMazoImpresion(null);
+            cambiarMazo(clave);
+            setACentrar(cartaId);
+          }}
+          usuario={usuario}
+          avatarUrl={userAvatarUrl(usuario)}
+          onLogout={cerrarSesion}
+        />
+        {dialogo && (
+          <DialogoImpresion
+            formato={formato}
+            onFormato={setFormatoId}
+            incluirDorsos={incluirDorsos}
+            onDorsos={setIncluirDorsos}
+            fichas={null}
+            incluirFichas={false}
+            onFichas={() => {}}
+            impresoras={impresoras}
+            impresoraId={impresoraId}
+            onImpresora={setImpresoraId}
+            onImpresoras={setImpresoras}
+            cartas={cartasImpresion}
+            estaSeleccionada={estaSeleccionada}
+            onAlternar={alternar}
+            onTodas={() => setExcluidas((ex) => ex.filter((id) => !cartasImpresion.some((c) => c.id === id)))}
+            onNinguna={() => setExcluidas((ex) => [...ex, ...seleccionImpresion.map((c) => c.id)])}
+            onInvertir={() =>
+              setExcluidas((ex) => [
+                ...ex.filter((id) => !cartasImpresion.some((c) => c.id === id)),
+                ...seleccionImpresion.map((c) => c.id),
+              ])
+            }
+            seleccionadas={seleccionImpresion}
+            total={cartasImpresion.length}
+            hayFiltro={false}
+            onCerrar={() => setDialogo(false)}
+            onImprimir={() => window.print()}
+          />
+        )}
+        <HojasImpresion
+          cartas={seleccionImpresion}
+          formato={formato}
+          incluirDorsos={incluirDorsos}
+          nombreMazo={mazoImpresionAbierto ? mazoImpresionAbierto.nombre : ""}
+          icono={null}
+          fichas={null}
+          incluirFichas={false}
+          desvio={desvio}
+        />
+      </>
+    );
+  }
+
   // Sin baraja abierta no hay visor que pintar: se está en el índice.
   if (!mazo) {
     return (
@@ -507,6 +617,8 @@ export default function VisorCartasKT() {
           grupo={grupo}
           onGrupo={setGrupo}
           onBaraja={cambiarMazo}
+          onMazosImpresion={() => abrirMazos()}
+          mazosImpresion={mazosImpresion.mazos.length}
           usuario={usuario}
           avatarUrl={userAvatarUrl(usuario)}
           onLogout={cerrarSesion}
@@ -637,6 +749,7 @@ export default function VisorCartasKT() {
           icono={iconoMazoUrl}
           seleccionada={estaSeleccionada(detalle.id)}
           onAlternar={alternar}
+          onAMazo={(id) => abrirAMazo([id])}
           onCerrar={cerrarDetalle}
           onAnterior={() => irRelativo(-1)}
           onSiguiente={() => irRelativo(1)}
@@ -671,8 +784,24 @@ export default function VisorCartasKT() {
           seleccionadas={seleccionadas}
           total={cartas.length}
           hayFiltro={filtro.length > 0}
+          onAMazo={() => abrirAMazo(seleccionadas.map((c) => c.id))}
           onCerrar={() => setDialogo(false)}
           onImprimir={() => window.print()}
+        />
+      )}
+
+      {aMazo && (
+        <AnadirAMazo
+          mazos={mazosImpresion.mazos}
+          cuantas={aMazo.length}
+          estado={mazosImpresion.estado}
+          error={mazosImpresion.error}
+          onAnadir={(id) => mazosImpresion.anadir(id, aMazo)}
+          onCrear={(nombre) => mazosImpresion.crear(nombre, aMazo)}
+          onCerrar={() => {
+            mazosImpresion.limpiarError();
+            setAMazo(null);
+          }}
         />
       )}
 

@@ -11,7 +11,10 @@ import { etiquetaTipo } from "../data/tipos.js";
 import { agruparPorTipo, esResumenes } from "../data/tipos-baraja.js";
 import MenuUsuario from "./MenuUsuario.jsx";
 
-export default function Portada({ barajas, grupo, onGrupo, onBaraja, usuario, avatarUrl, onLogout }) {
+export default function Portada({
+  barajas, grupo, onGrupo, onBaraja, onMazosImpresion, mazosImpresion = 0,
+  usuario, avatarUrl, onLogout,
+}) {
   const grupos = agruparPorTipo(barajas);
   // Un grupo que ya no existe (baraja despublicada, URL a mano) no deja la
   // portada en blanco: se cae a verlos todos.
@@ -27,7 +30,15 @@ export default function Portada({ barajas, grupo, onGrupo, onBaraja, usuario, av
           <span className="tenue larga">
             {barajas.length} barajas · {totalCartas} cartas
           </span>
-          <div style={{ marginLeft: "auto" }}>
+          <div style={{ marginLeft: "auto", display: "flex", gap: 6, alignItems: "center" }}>
+            {/* Los mazos de impresión no son un tipo de baraja más: no salen
+                del bucket, son del usuario. Por eso van en la barra y no como
+                un grupo de la rejilla. */}
+            {onMazosImpresion && (
+              <button className="btn btn-mini" onClick={onMazosImpresion}>
+                Mazos de impresión{mazosImpresion ? ` (${mazosImpresion})` : ""}
+              </button>
+            )}
             <MenuUsuario usuario={usuario} avatarUrl={avatarUrl} onLogout={onLogout} />
           </div>
         </div>

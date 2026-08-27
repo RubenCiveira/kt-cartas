@@ -1,9 +1,11 @@
-import { Account, Avatars, Client, Functions, ID, OAuthProvider, Query, Storage } from "appwrite";
+import { Account, Avatars, Client, Functions, ID, OAuthProvider, Permission, Query, Role, Storage, TablesDB } from "appwrite";
 
 export const APPWRITE_ENDPOINT = import.meta.env.VITE_APPWRITE_ENDPOINT || "https://appwrite.civeira.net/v1";
 export const APPWRITE_PROJECT_ID = import.meta.env.VITE_APPWRITE_PROJECT_ID || "6a78dce100015acd19b2";
 export const APPWRITE_ASSETS_BUCKET_ID = import.meta.env.VITE_APPWRITE_ASSETS_BUCKET_ID || "deck_assets";
 export const APPWRITE_REVIEW_FUNCTION_ID = import.meta.env.VITE_APPWRITE_REVIEW_FUNCTION_ID || "notify_verified_user";
+export const APPWRITE_DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID || "kt_cartas";
+export const APPWRITE_PRINT_DECKS_TABLE_ID = import.meta.env.VITE_APPWRITE_PRINT_DECKS_TABLE_ID || "print_decks";
 
 const client = new Client().setEndpoint(APPWRITE_ENDPOINT).setProject(APPWRITE_PROJECT_ID);
 let storageJwt = "";
@@ -12,6 +14,7 @@ export const account = new Account(client);
 export const avatars = new Avatars(client);
 export const storage = new Storage(client);
 export const functions = new Functions(client);
+export const tablesDB = new TablesDB(client);
 
 export function userAvatarUrl(user) {
   const name = user?.name || user?.email || "Usuario";
@@ -122,6 +125,60 @@ function cleanCurrentUrl() {
   url.searchParams.delete("userId");
   url.searchParams.delete("secret");
   return url;
+}
+
+// ---------- Mazos de impresión ----------
+//
+// Filas de la tabla `print_decks`, una por mazo. Van en Appwrite y no en
+// localStorage para que el mazo sea el mismo en el portátil que en el móvil que
+// tienes al lado de la impresora, que es justo cuando se usa.
+//
+// La tabla tiene rowSecurity, así que los permisos se ponen fila a fila: solo
+// su dueño la lee, la cambia y la borra. El `userId` de la columna es para
+// poder consultarlos desde el servidor; quien filtra de verdad es Appwrite.
+
+const permisosDe = (userId) => [
+  Permission.read(Role.user(userId)),
+  Permission.update(Role.user(userId)),
+  Permission.delete(Role.user(userId)),
+];
+
+export async function listarMazosImpresion(userId) {
+  const page = await tablesDB.listRows({
+    databaseId: APPWRITE_DATABASE_ID,
+    tableId: APPWRITE_PRINT_DECKS_TABLE_ID,
+    queries: [Query.equal("userId", userId), Query.orderDesc("$updatedAt"), Query.limit(100)],
+  });
+  return page.rows;
+}
+
+export async function crearMazoImpresion(userId, nombre, cartas = []) {
+  return tablesDB.createRow({
+    databaseId: APPWRITE_DATABASE_ID,
+    tableId: APPWRITE_PRINT_DECKS_TABLE_ID,
+    rowId: ID.unique(),
+    data: { userId, nombre, cartas, actualizado: new Date().toISOString() },
+    permissions: permisosDe(userId),
+  });
+}
+
+// Los permisos no se tocan al actualizar: son los del alta, y reenviarlos
+// obligaría a acertar con el userId en cada guardado.
+export async function guardarMazoImpresion(rowId, datos) {
+  return tablesDB.updateRow({
+    databaseId: APPWRITE_DATABASE_ID,
+    tableId: APPWRITE_PRINT_DECKS_TABLE_ID,
+    rowId,
+    data: { ...datos, actualizado: new Date().toISOString() },
+  });
+}
+
+export async function borrarMazoImpresion(rowId) {
+  return tablesDB.deleteRow({
+    databaseId: APPWRITE_DATABASE_ID,
+    tableId: APPWRITE_PRINT_DECKS_TABLE_ID,
+    rowId,
+  });
 }
 
 export async function listBucketFiles(queries = []) {

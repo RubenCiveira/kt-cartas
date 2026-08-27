@@ -2,6 +2,7 @@
 // @media print quien las revela y esconde el visor (ver estilos.js).
 
 import { Fragment } from "react";
+import { assetUrl } from "../assets.js";
 import CartaFace from "../cards/CartaFace.jsx";
 import CartaDorso from "../cards/CartaDorso.jsx";
 import HojaFichas from "./HojaFichas.jsx";
@@ -17,6 +18,14 @@ export default function HojasImpresion({
   const clase = (c) =>
     "celda" + (formato.giraFichas && c.tipo === "datacard" ? " celda-girada" : "");
   const claseDorso = (c) => clase(c) + " celda-dorso";
+  // En un mazo de impresión las cartas vienen de barajas distintas y cada una
+  // se lleva la suya en `origen`: el dorso tiene que seguir siendo el de SU
+  // baraja, o media tirada saldría con el nombre de otra facción detrás. En una
+  // baraja normal no hay `origen` y manda el mazo, como siempre.
+  const dorsoDe = (c) =>
+    c.origen
+      ? { nombre: c.origen.nombre, icono: assetUrl(c.origen.icono) }
+      : { nombre: nombreMazo, icono };
   const m = medidas(formato);
   // La barra mide 50 mm de diseño. Si sobre el papel no mide 50, la página se ha
   // reescalado y ninguna otra medida de la hoja es de fiar: es lo primero que
@@ -54,7 +63,7 @@ export default function HojasImpresion({
                 {espejarFilas(grupo, formato.cols || 2).map((c, j) =>
                   c ? (
                     <div key={c.id + "-dorso"} className={claseDorso(c)}>
-                      <CartaDorso carta={c} nombreMazo={nombreMazo} icono={icono} />
+                      <CartaDorso carta={c} nombreMazo={dorsoDe(c).nombre} icono={dorsoDe(c).icono} />
                     </div>
                   ) : (
                     <div key={"vacia-" + j} className="celda celda-vacia" />
@@ -88,7 +97,7 @@ export default function HojasImpresion({
                 {espejarFilas(grupo, colsFicha(formato)).map((c, j) =>
                   c ? (
                     <div key={c.id + "-dorso"} className="celda-ficha celda-dorso">
-                      <CartaDorso carta={c} nombreMazo={nombreMazo} icono={icono} />
+                      <CartaDorso carta={c} nombreMazo={dorsoDe(c).nombre} icono={dorsoDe(c).icono} />
                     </div>
                   ) : (
                     <div key={"vacia-f-" + j} className="celda-ficha celda-vacia" />

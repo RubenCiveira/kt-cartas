@@ -575,6 +575,47 @@ label {
 }
 .lista-ayuda dd { margin: 2px 0 0; color: var(--texto); font-size: 13px; line-height: 1.45; }
 
+/* ---------- Mazos de impresión ---------- */
+/* Dos columnas: la lista de mazos, estrecha y fija, y las cartas del abierto.
+   En móvil se apilan, porque una lista de 240 px al lado de miniaturas no deja
+   sitio para ninguna de las dos. */
+.mazos-cuerpo { display: flex; gap: 16px; padding: 16px; align-items: flex-start; }
+.mazos-lista {
+  width: 240px; flex: none; display: flex; flex-direction: column; gap: 6px;
+}
+.mazos-detalle { flex: 1; min-width: 0; }
+.mazos-nuevo { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
+.mazos-nuevo input { flex: 1; min-width: 0; }
+.mazo-fila {
+  display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
+  background: #182233; color: var(--texto); border: 1px solid var(--linea);
+  border-radius: 6px; padding: 8px 10px; font-size: 13px; cursor: pointer;
+  font-family: 'Barlow', sans-serif;
+}
+.mazo-fila:hover { border-color: var(--acento); }
+.mazo-fila.activa { border-color: var(--acento); background: #1d293c; }
+.mazo-fila .nombre { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mazos-cabecera { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 6px; }
+.mazo-nombre { flex: 1; min-width: 160px; }
+.mazo-carta { display: flex; flex-direction: column; gap: 4px; }
+.mazo-carta-pie {
+  display: flex; align-items: center; justify-content: space-between; gap: 6px;
+  font-size: 11px; max-width: calc(70mm * 0.36);
+}
+.mazo-carta-pie .tenue { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Una referencia que ya no resuelve: se enseña el hueco con su id, para poder
+   quitarla a sabiendas de cuál era. */
+.mazo-huerfana {
+  width: 100%; height: 100%; display: flex; flex-direction: column; gap: 4px;
+  align-items: center; justify-content: center; text-align: center; padding: 8px;
+  background: #141c2b; color: var(--texto); font-size: 11px; line-height: 1.3;
+  box-sizing: border-box;
+}
+@media (max-width: 720px) {
+  .mazos-cuerpo { flex-direction: column; }
+  .mazos-lista { width: 100%; }
+}
+
 /* ---------- Resúmenes (pantalla) ---------- */
 /* La previsualización es la hoja de verdad reducida al 55%: lo que se ve es lo
    que sale por la impresora, sin una maquetación paralela que mantener. Van en
