@@ -75,6 +75,7 @@ plantilla en `.env.example`:
     data/versiones.js    historial de erratas: qué cartas cambiaron y en qué
     data/impresiones.js  qué barajas y versiones tienes en papel, y qué falta
     cards/               render de la carta (anverso, dorso, texto, iconos)
+    cards/IconoArma.jsx  proyectiles o espada delante de cada fila de arma
     print/               formatos, hojas A4 y diálogo de impresión
     print/HojaA5.jsx     hoja de resumen (140 × 198 mm), y su paginado en HojasResumen.jsx
     viewer/              barra superior, tira, índice, buscador, detalle y narración
@@ -159,6 +160,31 @@ imprimir cartas y resúmenes de una tirada, esto deja de valer y habría que pas
 a páginas con nombre (`@page resumen { … }` + `page: resumen`).
 
 Para el formato del JSON, ver `../app-write/CLAUDE.md`.
+
+## El icono de tipo de arma
+
+La tabla de armas de una ficha de datos abre cada fila con el mismo símbolo que
+las tarjetas oficiales: **tres proyectiles** si el arma es a distancia, **una
+espada** si es de combate. Lo pinta `cards/IconoArma.jsx` a partir del campo
+`tipo` de cada arma (`"distancia"` / `"combate"`), que rellena
+`clasificar-armas.mjs` en `app-write` leyendo el icono del PDF —no está en el
+texto—.
+
+Va en **SVG dibujado aquí**, no como imagen del bucket: es maquetación, como los
+iconos de `src/icons/`, así que se imprime a cualquier tamaño sin pixelarse y
+toma el color del arquetipo de la carta.
+
+**La columna solo existe si la baraja trae el campo.** `CartaFace` mira si
+alguna arma lo declara y solo entonces añade la pista de 5,8 mm a la rejilla;
+una baraja anterior se maqueta exactamente igual que antes en vez de estrechar
+el nombre del arma para reservar un hueco que quedaría vacío.
+
+**Y el campo tiene que pasar por `migrarCarta`** (`data/decks.js`), que es donde
+esto se rompe. `migrarCarta` no copia la carta: **reconstruye** `armas` y
+`acciones` campo a campo, así que una clave nueva del JSON que no esté en esa
+lista se pierde entre el fichero y el render, y el síntoma es que la baraja tiene
+el dato y la carta sale como si no. Al añadir un campo a un arma, a una acción o
+a una carta, añádelo también ahí. Le ha pasado a `tipo` y a `retirada`.
 
 ## Fichas
 

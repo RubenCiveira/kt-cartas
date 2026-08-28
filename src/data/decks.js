@@ -35,6 +35,12 @@ export function migrarCarta(c, i) {
     imp: a.imp || a.impacto || "",
     dn: a.dn || a["daño"] || a.dano || "",
     reglas: a.reglas || "",
+    // "distancia" | "combate", para el icono de la tabla de armas (ver
+    // cards/IconoArma.jsx). Lo rellena `clasificar-armas.mjs` en app-write
+    // leyendo el icono del PDF. Cualquier otro valor cuenta como no declarado:
+    // una baraja sin clasificar se maqueta como siempre, sin columna de iconos,
+    // en vez de reservar un hueco vacío.
+    tipo: a.tipo === "distancia" || a.tipo === "combate" ? a.tipo : "",
   }));
   let acciones = c.acciones;
   if (acciones && !Array.isArray(acciones)) acciones = [acciones];

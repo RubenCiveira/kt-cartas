@@ -5,6 +5,7 @@ import { ARQUETIPOS, COLOR_ACCION, PT_MM, TIPOS, TIPOS_MISION } from "../data/ti
 import { useAssetUrl } from "../assets.js";
 import { ICONOS_ARQ, IconoArquetipo } from "./iconos.jsx";
 import GuiaFichas from "./GuiaFichas.jsx";
+import IconoArma from "./IconoArma.jsx";
 import { conMarcas, LineasTexto } from "./texto.jsx";
 
 // Marca de «esto ha cambiado», para comparar una carta con su versión anterior
@@ -42,6 +43,17 @@ export default function CartaFace({ carta, resaltar = null }) {
   const esReglas = carta.tipo === "reglas" || carta.tipo === "glosario";
   const stats = carta.stats || {};
   const armas = Array.isArray(carta.armas) ? carta.armas : [];
+  // La columna de iconos solo existe si la baraja dice de qué tipo es alguna de
+  // sus armas. Una baraja anterior a este campo se maqueta exactamente como
+  // antes —mismas anchuras, mismo alto de fila—, en vez de reservar un hueco
+  // vacío que estrecharía el nombre del arma sin dar nada a cambio.
+  const conIconoArma = armas.some((a) => a.tipo === "distancia" || a.tipo === "combate");
+  // La pista del icono es su ancho (1,73 mm de alto por la proporción 26:12 del
+  // viewBox = 3,75 mm) más un pelo de aire hasta el nombre. Va atada al `ALTO`
+  // de `IconoArma`: si allí cambia el tamaño, este número cambia con él.
+  const columnasArmas = conIconoArma
+    ? "3.95mm 1fr 6.5mm 7mm 8.5mm 1.3fr"
+    : "1fr 6.5mm 7mm 8.5mm 1.3fr";
   const acciones = Array.isArray(carta.acciones) ? carta.acciones : [];
   const fotoUrl = useAssetUrl(carta.foto);
   const compacto = Array.isArray(carta.compacto || carta.compactar) ? (carta.compacto || carta.compactar) : [];
@@ -281,7 +293,7 @@ export default function CartaFace({ carta, resaltar = null }) {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "1fr 6.5mm 7mm 8.5mm 1.3fr",
+              gridTemplateColumns: columnasArmas,
               gap: "0 1mm",
               fontFamily: "'Barlow Condensed', sans-serif",
               fontWeight: 700,
@@ -293,6 +305,7 @@ export default function CartaFace({ carta, resaltar = null }) {
               padding: "0.7mm 1.4mm",
             }}
           >
+            {conIconoArma && <span />}
             <span>NOMBRE</span>
             <span style={{ textAlign: "center" }}>ATQ</span>
             <span style={{ textAlign: "center" }}>IMP.</span>
@@ -304,8 +317,9 @@ export default function CartaFace({ carta, resaltar = null }) {
               key={a.id || i}
               style={{
                 display: "grid",
-                gridTemplateColumns: "1fr 6.5mm 7mm 8.5mm 1.3fr",
+                gridTemplateColumns: columnasArmas,
                 gap: "0 1mm",
+                alignItems: "center",
                 fontSize: "2.6mm",
                 padding: "0.7mm 1.4mm",
                 background: i % 2 === 0 ? "#F1F1F1" : "#FFFFFF",
@@ -316,6 +330,7 @@ export default function CartaFace({ carta, resaltar = null }) {
                 ...marca("armas", i),
               }}
             >
+              {conIconoArma && <IconoArma tipo={a.tipo} color={arq.color} />}
               <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.nombre}</span>
               <span style={{ textAlign: "center" }}>{a.atq}</span>
               <span style={{ textAlign: "center" }}>{a.imp}</span>
