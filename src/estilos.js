@@ -79,6 +79,9 @@ label {
 .btn-primario { background: #1F7A6D; border-color: var(--acento); }
 .btn-mini { padding: 4px 10px; font-size: 11px; }
 .btn-mini.activa { border-color: var(--acento); color: var(--acento); }
+/* Hay cartas por reimprimir. Es un aviso, no un error: se resalta el borde y se
+   deja el resto del botón igual, porque no urge nada. */
+.btn-aviso { border-color: var(--acento); }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .btn:disabled:hover { border-color: var(--linea); }
 .btn.ancho { width: 100%; margin-top: 12px; }
@@ -551,6 +554,36 @@ label {
   color: var(--acento); font-size: 11px; line-height: 14px; text-align: center;
 }
 .sel-carta.activa .sel-marca { border-color: var(--acento); }
+
+/* Comparador de versiones (viewer/DialogoVersiones.jsx): la carta de antes y la
+   de ahora, una al lado de la otra. Las dos van a la misma escala y sin
+   recortar: lo que se está haciendo es cotejarlas contra el papel que tienes en
+   la mano, así que encoger una respecto a la otra o cortar la que sobra dejaría
+   de valer. Si no caben a lo ancho, la fila se desplaza. */
+.comparador { padding: 10px 4px; border-bottom: 1px solid var(--linea); }
+.comparador:last-child { border-bottom: none; }
+.comparador-cabecera {
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between;
+  gap: 8px; margin-bottom: 8px; font-size: 13px;
+}
+.comparador-cabecera .tenue { font-size: 12px; }
+.comparador-par { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 4px; }
+.comparador-par figure { margin: 0; flex: 0 0 auto; }
+.comparador-par figcaption {
+  font-size: 11px; margin-bottom: 4px; letter-spacing: 0.04em; text-transform: uppercase;
+}
+.comparador-lienzo {
+  overflow: hidden; line-height: 0; border-radius: 4px; border: 1px solid var(--linea);
+  background: #FFFFFF;
+}
+/* Una baja de la que no queda copia: se borró del JSON en vez de marcarla. Ocupa
+   el hueco de una carta para que la fila no se descuadre. */
+.baja-sin-carta {
+  width: calc(70mm * 0.5); height: calc(121mm * 0.5);
+  display: grid; place-items: center; padding: 10px; text-align: center;
+  border: 1px dashed var(--linea); border-radius: 4px;
+  color: var(--tenue); font-size: 12px; line-height: 1.4;
+}
 
 /* Calibración de impresora: va dentro del diálogo, encuadrada, porque es un
    ajuste de la máquina y no de la tirada; leerlo como bloque aparte evita

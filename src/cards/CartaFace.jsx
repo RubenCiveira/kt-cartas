@@ -7,7 +7,29 @@ import { ICONOS_ARQ, IconoArquetipo } from "./iconos.jsx";
 import GuiaFichas from "./GuiaFichas.jsx";
 import { conMarcas, LineasTexto } from "./texto.jsx";
 
-export default function CartaFace({ carta }) {
+// Marca de «esto ha cambiado», para comparar una carta con su versión anterior
+// (ver viewer/DialogoVersiones.jsx). Es `outline` y no `border` ni `background`
+// a propósito: el outline no ocupa sitio, así que la carta resaltada se maqueta
+// **exactamente igual** que sin resaltar. Si el resaltado moviera una línea, la
+// comparación entre las dos cartas dejaría de ser fiable, que es para lo único
+// que existe.
+const RESALTE = {
+  outline: "0.5mm solid #E0876B",
+  outlineOffset: "0.3mm",
+  borderRadius: "0.8mm",
+};
+
+export default function CartaFace({ carta, resaltar = null }) {
+  // `seccion` es un campo de la carta ("cuerpo", "armas"…); con `fila`, además,
+  // la posición dentro de esa lista. Sin `resaltar` no marca nada, que es el
+  // caso de todo el visor salvo el diálogo de versiones.
+  const marca = (seccion, fila) => {
+    if (!resaltar) return null;
+    if (fila === undefined) return resaltar.campos?.has(seccion) ? RESALTE : null;
+    return resaltar[seccion]?.has(fila) ? RESALTE : null;
+  };
+  const marcaStat = (clave) => (resaltar?.stats?.has(clave) ? RESALTE : null);
+
   const arqConocido = ARQUETIPOS.find((a) => a.id === carta.arquetipo);
   const arq = arqConocido || ARQUETIPOS[0];
   // Si el arquetipo no es uno de los conocidos pero hay texto (p.ej. "Volkus" en
@@ -187,6 +209,7 @@ export default function CartaFace({ carta }) {
           letterSpacing: "0.03em",
           textTransform: "uppercase",
           color: "#14181F",
+          ...marca("titulo"),
         }}
       >
         {carta.titulo || "SIN TÍTULO"}
@@ -209,6 +232,7 @@ export default function CartaFace({ carta }) {
               letterSpacing: "0.05em",
               textTransform: "uppercase",
               borderRadius: "0.8mm 0 0 0.8mm",
+              ...marca("titulo"),
             }}
           >
             {carta.titulo || "SIN TÍTULO"}
@@ -217,10 +241,10 @@ export default function CartaFace({ carta }) {
             <img src={fotoUrl} alt="" style={{ height: "10mm", alignSelf: "center", flex: "0 0 auto" }} />
           )}
           {[
-            { k: "LPA", v: stats.apl },
-            { k: "MOV", v: stats.mov },
-            { k: "SALV", v: stats.salv },
-            { k: "HER", v: stats.her },
+            { k: "LPA", clave: "apl", v: stats.apl },
+            { k: "MOV", clave: "mov", v: stats.mov },
+            { k: "SALV", clave: "salv", v: stats.salv },
+            { k: "HER", clave: "her", v: stats.her },
           ].map((s, i) => (
             <div
               key={s.k}
@@ -232,6 +256,7 @@ export default function CartaFace({ carta }) {
                 textAlign: "center",
                 padding: "0.9mm 0 0.7mm",
                 borderRadius: i === 3 ? "0 0.8mm 0.8mm 0" : 0,
+                ...marcaStat(s.clave),
               }}
             >
               <div
@@ -288,6 +313,7 @@ export default function CartaFace({ carta }) {
                 borderRight: `0.35mm solid ${arq.color}`,
                 borderBottom: i === armas.length - 1 ? `0.35mm solid ${arq.color}` : "none",
                 borderRadius: i === armas.length - 1 ? "0 0 1mm 1mm" : 0,
+                ...marca("armas", i),
               }}
             >
               <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.nombre}</span>
@@ -317,17 +343,22 @@ export default function CartaFace({ carta }) {
               lineHeight: alto("revelado", 1.25),
               margin: "0 0 1.5mm",
               color: "#3A4250",
+              ...marca("revelado"),
             }}
           >
             {conMarcas(carta.revelado)}
           </p>
         )}
-        <LineasTexto texto={carta.cuerpo} color={arq.color} fontSize={tamCuerpo("cuerpo", "2.8mm")} lineHeight={alto("cuerpo")} />
+        {/* El cuerpo no tiene contenedor propio; el resaltado necesita uno.
+            Sin marca, el div es transparente y no cambia nada. */}
+        <div style={marca("cuerpo") || undefined}>
+          <LineasTexto texto={carta.cuerpo} color={arq.color} fontSize={tamCuerpo("cuerpo", "2.8mm")} lineHeight={alto("cuerpo")} />
+        </div>
         {/* Solo la lleva la carta que genera `conGuiaDeFichas` (ver data/decks.js) */}
         <GuiaFichas fichas={carta.fichas} />
         {!esDatacard &&
-          armas.map((a) => (
-            <div key={a.id} style={{ margin: "0.8mm 0 1.8mm" }}>
+          armas.map((a, i) => (
+            <div key={a.id} style={{ margin: "0.8mm 0 1.8mm", ...marca("armas", i) }}>
               <div
                 style={{
                   borderTop: "0.5mm solid #14181F",
@@ -385,7 +416,7 @@ export default function CartaFace({ carta }) {
               )}
             </div>
           ))}
-        {acciones.map((a) => (
+        {acciones.map((a, i) => (
           <div
             key={a.id}
             style={{
@@ -394,6 +425,7 @@ export default function CartaFace({ carta }) {
               borderRadius: "1mm",
               overflow: "hidden",
               breakInside: "avoid",
+              ...marca("acciones", i),
             }}
           >
             <div
@@ -428,6 +460,7 @@ export default function CartaFace({ carta }) {
             border: `0.35mm solid ${arq.color}`,
             borderRadius: "1.2mm",
             padding: "1.4mm 1.8mm",
+            ...marca("pv"),
           }}
         >
           <div
@@ -458,6 +491,7 @@ export default function CartaFace({ carta }) {
             lineHeight: alto("flavor", 1.25),
             textAlign: "center",
             color: "#5A6270",
+            ...marca("flavor"),
           }}
         >
           {conMarcas(carta.flavor)}

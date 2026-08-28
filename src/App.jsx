@@ -13,6 +13,8 @@ import { useAssetUrl, useIconoBarajaUrl } from "./assets.js";
 import { TIPOS } from "./data/tipos.js";
 import { cargarBarajasRemotas, crearBarajaLocal, resolverMazo } from "./data/decks.js";
 import { cartasParaImprimir, refDe, useMazosImpresion } from "./data/mazos-impresion.js";
+import { pendientesDeImprimir, useImpresiones } from "./data/impresiones.js";
+import { tieneHistorial } from "./data/versiones.js";
 import { esResumenes } from "./data/tipos-baraja.js";
 import { completeVerification, getSessionUser, login, loginWithGoogle, logout, register, requestAccessReview, sendVerification, userAvatarUrl } from "./appwrite.js";
 import { getFormato, STORAGE_KEY_FORMATO } from "./print/formatos.js";
@@ -38,6 +40,8 @@ import Indice from "./viewer/Indice.jsx";
 import Portada from "./viewer/Portada.jsx";
 import MazosImpresion from "./viewer/MazosImpresion.jsx";
 import AnadirAMazo from "./viewer/AnadirAMazo.jsx";
+import DialogoVersiones from "./viewer/DialogoVersiones.jsx";
+import ConfirmarImpresion from "./viewer/ConfirmarImpresion.jsx";
 import useDock from "./viewer/useDock.js";
 import useNarrador from "./viewer/narracion.js";
 
@@ -101,6 +105,11 @@ export default function VisorCartasKT() {
   // de uno abierto) y `aMazo` las referencias que espera el popup de añadir.
   const [mazoImpresion, setMazoImpresion] = useState(inicial.imprimir);
   const [aMazo, setAMazo] = useState(null);
+  // Versiones: si está abierto el comparador de erratas, y la tirada que espera
+  // confirmación después de `window.print()` (ver viewer/ConfirmarImpresion.jsx).
+  // Tampoco van a la URL: son pasos de un momento, no sitios.
+  const [verVersiones, setVerVersiones] = useState(false);
+  const [porConfirmar, setPorConfirmar] = useState(null);
   // Carta a la que hay que saltar desde el índice o el buscador; se resuelve en
   // un efecto porque puede exigir quitar antes el filtro y esperar al repintado.
   const [aCentrar, setACentrar] = useState(inicial.carta);
@@ -237,6 +246,16 @@ export default function VisorCartasKT() {
 
   // Mazos de impresión del usuario (en Appwrite, ver data/mazos-impresion.js)
   const mazosImpresion = useMazosImpresion(usuario);
+
+  // Registro de barajas impresas y, con él, qué cartas de la baraja abierta se
+  // han quedado desactualizadas en el papel (ver data/impresiones.js). Solo
+  // tiene sentido en barajas con historial de erratas; en las demás, `null`.
+  const registro = useImpresiones(usuario);
+  const hayVersiones = tieneHistorial(mazo);
+  const pendientes = useMemo(
+    () => (hayVersiones ? pendientesDeImprimir(mazo, registro.impresiones) : null),
+    [hayVersiones, mazo, registro.impresiones]
+  );
   const mazoImpresionAbierto = mazosImpresion.mazos.find((m) => m.id === mazoImpresion) || null;
   // Las cartas del mazo abierto, ya resueltas contra las barajas cargadas. Se
   // recalculan con las barajas porque una carta corregida en su JSON tiene que
@@ -263,6 +282,21 @@ export default function VisorCartasKT() {
   // imprimir, todas las marcadas.
   const abrirAMazo = (ids) =>
     setAMazo(ids.map((id) => refDe(mazoActivo, id)));
+
+  // Imprimir y, cuando el diálogo del navegador se cierra, preguntar si ha
+  // salido bien para apuntarlo. `window.print()` bloquea hasta entonces, pero no
+  // dice si se imprimió o se canceló: eso solo lo sabe quien mira la bandeja.
+  const imprimirBaraja = () => {
+    window.print();
+    if (!mazo) return;
+    setPorConfirmar({
+      baraja: mazo.clave,
+      nombre: mazo.nombre,
+      version: mazo.version || "",
+      cartas: seleccionadas.map((c) => c.id),
+      completa: seleccionadas.length === cartas.length,
+    });
+  };
 
   // Cambiar de baraja reinicia lo que es propio de una baraja. Va aquí y no en
   // un efecto sobre mazoActivo porque, como efecto, se dispararía también
@@ -711,6 +745,9 @@ export default function VisorCartasKT() {
           onImprimir={() => setDialogo(true)}
           hayFichas={!!fichas}
           onFichas={() => setVerFichas(true)}
+          hayVersiones={hayVersiones}
+          pendientes={pendientes && !pendientes.desconocido ? pendientes.cartas.length : 0}
+          onVersiones={() => setVerVersiones(true)}
           usuario={usuario}
           avatarUrl={userAvatarUrl(usuario)}
           onLogout={cerrarSesion}
@@ -786,7 +823,33 @@ export default function VisorCartasKT() {
           hayFiltro={filtro.length > 0}
           onAMazo={() => abrirAMazo(seleccionadas.map((c) => c.id))}
           onCerrar={() => setDialogo(false)}
-          onImprimir={() => window.print()}
+          onImprimir={imprimirBaraja}
+        />
+      )}
+
+      {verVersiones && hayVersiones && (
+        <DialogoVersiones
+          baraja={mazo}
+          impreso={pendientes}
+          onCerrar={() => setVerVersiones(false)}
+          onAMazo={(ids) => {
+            setVerVersiones(false);
+            abrirAMazo(ids);
+          }}
+        />
+      )}
+
+      {porConfirmar && (
+        <ConfirmarImpresion
+          nombre={porConfirmar.nombre}
+          version={porConfirmar.version}
+          cuantas={porConfirmar.cartas.length}
+          completa={porConfirmar.completa}
+          onSi={() => {
+            registro.registrar(porConfirmar);
+            setPorConfirmar(null);
+          }}
+          onNo={() => setPorConfirmar(null)}
         />
       )}
 

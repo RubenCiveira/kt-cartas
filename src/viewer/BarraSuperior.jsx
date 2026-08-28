@@ -27,6 +27,12 @@ export default function BarraSuperior({
   onImprimir,
   hayFichas,
   onFichas,
+  // Solo cuando la baraja trae historial de erratas; `pendientes` es cuántas
+  // cartas quedan por reimprimir según el registro de impresiones, y va en el
+  // botón porque es el dato que hace mirar (o no) el diálogo.
+  hayVersiones,
+  pendientes,
+  onVersiones,
   usuario,
   avatarUrl,
   onLogout,
@@ -82,6 +88,16 @@ export default function BarraSuperior({
         {hayFichas && (
           <button className="btn btn-mini" onClick={onFichas} title="Ver las fichas de la baraja a tamaño real">
             ●<span className="larga"> Fichas</span>
+          </button>
+        )}
+        {hayVersiones && (
+          <button
+            className={"btn btn-mini" + (pendientes ? " btn-aviso" : "")}
+            onClick={onVersiones}
+            title="Ver qué cartas han cambiado y cuáles hay que reimprimir"
+          >
+            ⟳<span className="larga"> Actualizaciones</span>
+            {pendientes > 0 && <em className="acento"> {pendientes}</em>}
           </button>
         )}
         <Buscador cartas={cartas} onIr={onIr} />

@@ -72,11 +72,15 @@ plantilla en `.env.example`:
     data/tipos.js        tipos de carta, arquetipos y constantes de maquetación
     data/tipos-baraja.js tipos de baraja y agrupación para portada y selector
     data/decks.js        carga remota y normalización de las barajas
+    data/versiones.js    historial de erratas: qué cartas cambiaron y en qué
+    data/impresiones.js  qué barajas y versiones tienes en papel, y qué falta
     cards/               render de la carta (anverso, dorso, texto, iconos)
     print/               formatos, hojas A4 y diálogo de impresión
     print/HojaA5.jsx     hoja de resumen (140 × 198 mm), y su paginado en HojasResumen.jsx
     viewer/              barra superior, tira, índice, buscador, detalle y narración
     viewer/Ampliacion.jsx  capa de lectura (marco y scroll) para hojas y fichas
+    viewer/DialogoVersiones.jsx  qué cartas han cambiado, la vieja y la nueva en pareja
+    viewer/ConfirmarImpresion.jsx  «¿ha salido bien?», para apuntar la tirada
     viewer/Portada.jsx   índice de barajas por tipo (la pantalla de entrada)
     viewer/SelectorBarajas.jsx  popup anidado de la barra para cambiar de baraja
     viewer/useDock.js    magnificación por distancia al puntero
@@ -225,6 +229,77 @@ mezclado no hay nombre ni icono compartido que poner detrás. Por lo mismo, el
 `id` de una carta dentro del mazo es su referencia entera: dos barajas usan `c3`
 las dos, y las hojas necesitan ids únicos dentro de la tirada (y así comparten
 sin chocar el registro de exclusiones con las cartas de las barajas).
+
+## Actualizaciones y barajas impresas
+
+Las reglas se corrigen, pero el papel que has recortado no. Meses después, el
+taco que hay en la caja no dice de qué versión es, y la pregunta práctica no es
+«qué ha cambiado» sino **«qué cartas tengo que volver a imprimir»**.
+
+Son dos piezas que se apoyan la una en la otra:
+
+- **El historial** viaja dentro del JSON de la baraja (`version` y `versiones`),
+  escrito por `versionar-baraja.mjs` en `app-write` comparando contra git. Cada
+  entrada describe el salto a esa fecha y guarda la carta **de antes** entera.
+  `data/decks.js` la normaliza con `migrarCarta` como cualquier otra carta,
+  porque eso es lo que es y se pinta con el mismo `CartaFace`.
+- **El registro** de lo que has impreso es la tabla `printed_decks` de Appwrite,
+  una fila por tirada (`data/impresiones.js`). Va en Appwrite y no en
+  `localStorage` por lo mismo que los mazos: se consulta desde el móvil que
+  tienes al lado de la impresora.
+
+`data/versiones.js` es la lógica sin pantalla. `versionesDesde()` da las entradas
+posteriores a una fecha y `cartasAfectadas()` las funde en **una lista de cartas
+a reimprimir**: una carta tocada en dos erratas seguidas sale una vez, con la
+unión de los campos y con el `anterior` de la **primera**, porque lo que importa
+no es cada paso intermedio sino la diferencia entre el papel que tienes y la
+carta de ahora.
+
+**Cartas retiradas.** Una actualización puede llevarse una carta por delante, y
+entonces lo que hay que hacer no es reimprimirla sino sacarla del taco. Esas
+cartas siguen en el JSON con `retirada: "<fecha>"` (no se borran: así la
+referencia de un mazo de impresión no queda huérfana y hay algo que enseñar).
+`partirRetiradas()` en `data/decks.js` las aparta en `baraja.retiradas`, fuera de
+`cartas`, así que **no salen en la tira, ni en el índice, ni en el buscador, ni
+en la impresión**: la baraja que se ve es la jugable. Solo aparecen en el diálogo
+de actualizaciones, y `cartasAfectadas()` las descuenta de lo pendiente aunque
+hubieran cambiado antes.
+
+Ojo con el orden en `partirRetiradas()`: **migra y luego filtra**. `migrarCarta`
+da el id por posición cuando la carta no lo trae, así que filtrar primero correría
+los ids de todas las cartas que van detrás de una retirada.
+
+`pendientesDeImprimir()` (`data/impresiones.js`) cruza las dos cosas. Parte de la
+última tirada **completa** y descuenta lo reimpreso suelto después: si en agosto
+solo reimprimiste las cuatro cartas de la errata, esas ya están bien aunque el
+resto del mazo siga siendo de junio. Es la diferencia entre un aviso útil y uno
+que te manda reimprimir dos veces lo mismo. Por eso el registro guarda una fila
+por tirada y no un estado por baraja: se imprimen dos cosas distintas, el mazo
+entero y cartas sueltas, y una fila por baraja haría que la segunda pisara a la
+primera.
+
+**El resaltado.** `resaltadoDe()` devuelve qué partes difieren y `CartaFace` lo
+recibe por su prop opcional `resaltar`. Se pinta con **`outline`**, no con borde
+ni fondo: el outline no ocupa sitio, así que la carta resaltada se maqueta
+exactamente igual que sin resaltar. Si el resaltado moviera una línea, la
+comparación entre las dos cartas dejaría de ser fiable, que es para lo único que
+existe. Las filas de armas y acciones se casan **por nombre** y no por posición
+—una errata cambia el ATQ de «Colmillos», no lo renombra—; casarlas por posición
+marcaría la lista entera en cuanto se recolocara una fila.
+
+La pantalla es `viewer/DialogoVersiones.jsx`, que abre el botón
+**Actualizaciones** de la barra (solo si la baraja trae historial, con el número
+de cartas pendientes al lado). Primero se elige **desde qué versión** comparar
+—la propone el registro, y si no consta se elige a mano—, y debajo salen las
+cartas afectadas en pareja. El pie lleva a `AnadirAMazo` con las cartas
+pendientes ya marcadas, que es donde acaba el flujo: reimprimirlas.
+
+**Apuntar la impresión.** `window.print()` no dice si se imprimió o si cancelaste
+el diálogo del navegador, y un registro que miente es peor que no tenerlo. Por
+eso `viewer/ConfirmarImpresion.jsx` pregunta «¿ha salido bien?» al volver, y solo
+entonces escribe la fila. Apuntarlo a mano se olvidaría —que es justo por lo que
+no sabes qué versión tienes— y apuntarlo al pulsar «Imprimir» registraría
+tiradas que no existieron.
 
 ## Calibración de impresora
 

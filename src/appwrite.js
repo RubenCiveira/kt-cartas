@@ -6,6 +6,8 @@ export const APPWRITE_ASSETS_BUCKET_ID = import.meta.env.VITE_APPWRITE_ASSETS_BU
 export const APPWRITE_REVIEW_FUNCTION_ID = import.meta.env.VITE_APPWRITE_REVIEW_FUNCTION_ID || "notify_verified_user";
 export const APPWRITE_DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID || "kt_cartas";
 export const APPWRITE_PRINT_DECKS_TABLE_ID = import.meta.env.VITE_APPWRITE_PRINT_DECKS_TABLE_ID || "print_decks";
+export const APPWRITE_PRINTED_DECKS_TABLE_ID =
+  import.meta.env.VITE_APPWRITE_PRINTED_DECKS_TABLE_ID || "printed_decks";
 
 const client = new Client().setEndpoint(APPWRITE_ENDPOINT).setProject(APPWRITE_PROJECT_ID);
 let storageJwt = "";
@@ -177,6 +179,54 @@ export async function borrarMazoImpresion(rowId) {
   return tablesDB.deleteRow({
     databaseId: APPWRITE_DATABASE_ID,
     tableId: APPWRITE_PRINT_DECKS_TABLE_ID,
+    rowId,
+  });
+}
+
+// ---------- Barajas impresas ----------
+//
+// Filas de la tabla `printed_decks`, una por tirada: qué baraja, en qué versión
+// y qué cartas salieron. Es el registro que contesta a «¿la que tengo impresa
+// está al día?» cuando el taco de cartas lleva meses en su caja y no hay nada
+// escrito en él.
+//
+// Va en Appwrite por lo mismo que los mazos: se consulta desde el móvil que
+// tienes al lado de la impresora. Mismo esquema de permisos por fila.
+//
+// Se guarda **una fila por tirada** y no una por baraja, para poder decir «esta
+// carta la reimprimiste en agosto aunque el resto del mazo sea de junio». Quien
+// resume eso es `data/impresiones.js`.
+
+export async function listarImpresiones(userId) {
+  const page = await tablesDB.listRows({
+    databaseId: APPWRITE_DATABASE_ID,
+    tableId: APPWRITE_PRINTED_DECKS_TABLE_ID,
+    queries: [Query.equal("userId", userId), Query.orderDesc("$createdAt"), Query.limit(200)],
+  });
+  return page.rows;
+}
+
+export async function registrarImpresion(userId, { baraja, version, cartas = [], completa = false }) {
+  return tablesDB.createRow({
+    databaseId: APPWRITE_DATABASE_ID,
+    tableId: APPWRITE_PRINTED_DECKS_TABLE_ID,
+    rowId: ID.unique(),
+    data: {
+      userId,
+      baraja,
+      version: version || "",
+      cartas,
+      completa,
+      impreso: new Date().toISOString(),
+    },
+    permissions: permisosDe(userId),
+  });
+}
+
+export async function borrarImpresion(rowId) {
+  return tablesDB.deleteRow({
+    databaseId: APPWRITE_DATABASE_ID,
+    tableId: APPWRITE_PRINTED_DECKS_TABLE_ID,
     rowId,
   });
 }

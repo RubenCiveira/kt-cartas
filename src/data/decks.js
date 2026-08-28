@@ -21,7 +21,7 @@ const CAMPOS_CARTA = {
 // Normaliza una carta del JSON: rellena los campos que falten, traduce los
 // nombres antiguos y le da un id estable (posición dentro de la baraja).
 export function migrarCarta(c, i) {
-  const base = { ...CAMPOS_CARTA, ...c, id: c.id || "c" + i };
+  const base = { ...CAMPOS_CARTA, ...c, id: c.id || "c" + i, retirada: c.retirada || "" };
   if (c.tipo === "ploy") base.tipo = "ploy_estrategico";
   if (c.tipo === "continuacion") {
     base.tipo = "custom";
@@ -94,6 +94,64 @@ export function conGuiaDeFichas(cartas, fichas) {
   return cartas.map((c, j) => (j === i ? { ...guia, id: c.id } : c));
 }
 
+// Separa las cartas que una actualización se ha llevado por delante.
+//
+// Una carta retirada **sigue en el JSON**, con la fecha en que dejó de valer.
+// Se queda ahí y no se borra para que la referencia que un mazo de impresión
+// tenga a esa carta no quede huérfana, y para poder enseñarla al comparar
+// versiones —si la tienes en el taco, querrás ver cuál es la que hay que sacar—.
+//
+// En el visor no aparece: ni en la tira, ni en el índice, ni en el buscador, ni
+// en la impresión. La baraja que se ve es siempre la baraja jugable.
+//
+// **Se migra antes de partir**, no después: `migrarCarta` da el id por posición
+// cuando la carta no lo trae, así que filtrar primero correría los ids de todas
+// las cartas que van detrás de una retirada.
+function partirRetiradas(cartas) {
+  const migradas = cartas.map(migrarCarta);
+  return {
+    cartas: migradas.filter((c) => !c.retirada),
+    retiradas: migradas.filter((c) => c.retirada),
+  };
+}
+
+// Historial de erratas de una baraja: una entrada por versión, ordenada de la
+// más antigua a la más reciente, con la carta **anterior** completa dentro de
+// cada cambio. Lo escribe `versionar-baraja.mjs` (app-write) comparando contra
+// git; aquí solo se normaliza y se ordena, porque un JSON escrito a mano puede
+// traer la lista desordenada o campos a medias.
+//
+// Las cartas de `anterior` y de `bajas` pasan por `migrarCarta` como cualquier
+// otra: son cartas de verdad, y el visor las pinta con el mismo `CartaFace`.
+function normalizarVersiones(versiones) {
+  if (!Array.isArray(versiones)) return [];
+  return versiones
+    .filter((v) => v && v.fecha)
+    .map((v) => ({
+      fecha: String(v.fecha),
+      nota: v.nota || "",
+      cambios: (Array.isArray(v.cambios) ? v.cambios : []).map((c) => ({
+        id: c.id || "",
+        titulo: c.titulo || "",
+        campos: Array.isArray(c.campos) ? c.campos : [],
+        anterior: migrarCarta(c.anterior || {}, 0),
+      })),
+      altas: (Array.isArray(v.altas) ? v.altas : []).map((a) => ({
+        id: a.id || "",
+        titulo: a.titulo || "",
+      })),
+      // Una baja apunta al id de la carta retirada, que normalmente sigue en la
+      // baraja. `carta` solo viene cuando se borró del JSON a lo bruto y no hay
+      // de dónde sacarla; quien la resuelve es `cartasAfectadas`.
+      bajas: (Array.isArray(v.bajas) ? v.bajas : []).map((b, i) => ({
+        id: b.id || "c" + i,
+        titulo: b.titulo || "",
+        carta: b.carta ? migrarCarta(b.carta, i) : null,
+      })),
+    }))
+    .sort((a, b) => a.fecha.localeCompare(b.fecha));
+}
+
 // Una hoja de resumen: A5 apaisada, a una o dos columnas, con bloques de texto
 // escritos en el mismo mini-lenguaje que el cuerpo de las cartas (ver
 // cards/texto.jsx): "# " encabezado, "> " y "- " viñetas y "|" tablas.
@@ -131,15 +189,19 @@ export async function cargarBarajasRemotas() {
     const data = await fetchJsonFile(file.$id, file.signature || file.$updatedAt || "");
     const id = file.$id.replace(/\.json$/, "").replace(/-deck$/, "");
     const clave = file.$id === "default-deck.json" ? CLAVE_DEFECTO : "faccion:" + id;
+    const { cartas, retiradas } = partirRetiradas(data.cartas || []);
     return {
       clave,
       id,
       nombre: data.nombre || id,
       tipo: normalizarTipoBaraja(data.tipo),
-      cartas: conGuiaDeFichas((data.cartas || []).map(migrarCarta), data.fichas),
+      cartas: conGuiaDeFichas(cartas, data.fichas),
+      retiradas,
       hojas: (data.hojas || []).map(migrarHoja),
       icono: data.icono || "",
       fichas: data.fichas || null,
+      version: data.version || "",
+      versiones: normalizarVersiones(data.versiones),
     };
   }));
 
@@ -178,15 +240,21 @@ function ordenDeck(id) {
 }
 
 function normalizarBaraja(data, { clave, id, nombre }) {
+  const { cartas, retiradas } = partirRetiradas(data.cartas || []);
   return {
     clave,
     id,
     nombre,
     tipo: normalizarTipoBaraja(data.tipo),
-    cartas: conGuiaDeFichas((data.cartas || []).map(migrarCarta), data.fichas),
+    cartas: conGuiaDeFichas(cartas, data.fichas),
+    retiradas,
     hojas: (data.hojas || []).map(migrarHoja),
     icono: data.icono || "",
     fichas: data.fichas || null,
+    // Historial de erratas: lo escribe `versionar-baraja.mjs` en app-write a
+    // partir de git. Ver `data/versiones.js`.
+    version: data.version || "",
+    versiones: normalizarVersiones(data.versiones),
   };
 }
 
