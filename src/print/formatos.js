@@ -68,6 +68,7 @@ export function variablesFormato(f, desvio = SIN_DESVIO) {
     // una ficha tiene que medir lo mismo que sus compañeras de hoja.
     "--esc-ficha": f.giraFichas ? f.esc : f.ficha ? f.ficha.esc : f.esc * 0.95,
     "--cols": f.cols || 2,
+    "--filas": f.filas || 2,
     "--cols-ficha": f.ficha ? f.ficha.cols : 1,
   };
   if (f.hueco) v["--hueco"] = f.hueco + "mm";

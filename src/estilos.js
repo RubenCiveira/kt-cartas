@@ -742,7 +742,7 @@ label {
 }
 .hoja-impresion { display: none; }
 @media print {
-  body { background: white !important; }
+  body { background: white !important; margin: 0; }
   .app-visor, .portada, .detalle, .indice, .modal-fondo, .ampliacion { display: none !important; }
   .hoja-impresion { display: block !important; background: white; }
   /* La hoja ocupa EXACTAMENTE el ancho de la página, sea el que sea. En 100 %
@@ -767,6 +767,7 @@ label {
   .hoja-cartas { width: 100%; box-sizing: border-box; overflow: hidden; }
   .hoja-cartas .hoja {
     width: 100%; height: 100vh; box-sizing: border-box; overflow: hidden;
+    contain: layout paint;
   }
   .hoja { page-break-after: always; break-after: page; }
   .hoja:last-child { page-break-after: auto; break-after: auto; }
@@ -774,7 +775,7 @@ label {
      impide que nada vuelva a ensanchar la hoja: basta con que un hijo se salga
      —el desvío de calibración del dorso, por ejemplo— para que el navegador
      decida que la página no cabe en el A4 y la encoja entera. */
-  .pagina, .pagina-ficha { overflow: hidden; }
+  .pagina, .pagina-ficha { overflow: hidden; contain: layout paint; }
   /* Calibración de impresora. Casi ninguna centra el papel igual por las dos
      caras: si el anverso sale con 9 mm a la izquierda y 5 a la derecha, al
      voltear el folio el dorso necesita 5 y 9, o no cae detrás de su carta.
@@ -787,7 +788,7 @@ label {
   .pagina {
     display: grid;
     grid-template-columns: repeat(var(--cols, 2), var(--celda-ancho));
-    grid-auto-rows: var(--celda-alto);
+    grid-template-rows: repeat(var(--filas, 2), var(--celda-alto));
     gap: var(--hueco, 3mm); justify-content: center; align-content: start;
   }
   /* El diseño base ocupa 70×121 mm; el formato elegido lo encoge en bloque
@@ -803,6 +804,7 @@ label {
      que dice el formato". En absoluto no ocupa sitio y la celda manda. */
   .celda { position: relative; outline: 0.2mm dashed #999;
     width: var(--celda-ancho); height: var(--celda-alto); overflow: hidden;
+    contain: strict;
   }
   .celda > * {
     /* El !important no es pereza: CartaFace y CartaDorso fijan position:relative
@@ -851,6 +853,7 @@ label {
   .celda-ficha {
     position: relative; outline: 0.2mm dashed #999;
     width: calc(121mm * var(--esc-ficha)); height: calc(70mm * var(--esc-ficha)); overflow: hidden;
+    contain: strict;
   }
   .celda-ficha > * {
     position: absolute !important; top: 0; left: 0;

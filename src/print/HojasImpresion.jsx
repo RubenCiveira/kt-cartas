@@ -6,7 +6,7 @@ import { assetUrl } from "../assets.js";
 import CartaFace from "../cards/CartaFace.jsx";
 import CartaDorso from "../cards/CartaDorso.jsx";
 import HojaFichas from "./HojaFichas.jsx";
-import { colsFicha, espejarFilas, etiquetaFormato, medidas, repartirHojas, variablesFormato } from "./formatos.js";
+import { colsFicha, espejarFilas, etiquetaFormato, medidas, porHoja, repartirHojas, variablesFormato } from "./formatos.js";
 
 export default function HojasImpresion({
   cartas, formato, incluirDorsos, nombreMazo, icono, fichas, incluirFichas, desvio,
@@ -27,6 +27,12 @@ export default function HojasImpresion({
       ? { nombre: c.origen.nombre, icono: assetUrl(c.origen.icono) }
       : { nombre: nombreMazo, icono };
   const m = medidas(formato);
+  const celdasPorPagina = porHoja(formato);
+  const rellenarPagina = (grupo) => {
+    const relleno = [...grupo];
+    while (relleno.length < celdasPorPagina) relleno.push(null);
+    return relleno;
+  };
   // La barra mide 50 mm de diseño. Si sobre el papel no mide 50, la página se ha
   // reescalado y ninguna otra medida de la hoja es de fiar: es lo primero que
   // hay que descartar cuando una carta sale de un tamaño que no toca.
@@ -47,11 +53,15 @@ export default function HojasImpresion({
               {etiqueta} · anverso {i + 1}/{paginas.length} · imprimir al 100 %
             </Etiqueta>
             <div className="pagina">
-              {grupo.map((c) => (
-                <div key={c.id} className={clase(c)}>
-                  <CartaFace carta={c} />
-                </div>
-              ))}
+              {rellenarPagina(grupo).map((c, j) =>
+                c ? (
+                  <div key={c.id} className={clase(c)}>
+                    <CartaFace carta={c} />
+                  </div>
+                ) : (
+                  <div key={"vacia-frente-" + j} className="celda celda-vacia" />
+                )
+              )}
             </div>
           </div>
           {incluirDorsos && (
