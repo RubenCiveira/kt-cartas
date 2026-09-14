@@ -28,8 +28,10 @@ import {
 import { escribirHash, leerHash } from "./estado-url.js";
 import HojasImpresion from "./print/HojasImpresion.jsx";
 import HojasResumen from "./print/HojasResumen.jsx";
+import HojasMiniaturas from "./print/HojasMiniaturas.jsx";
 import DialogoImpresion from "./print/DialogoImpresion.jsx";
 import DialogoImpresionResumen from "./print/DialogoImpresionResumen.jsx";
+import DialogoImprimirMiniaturas from "./viewer/DialogoImprimirMiniaturas.jsx";
 import VisorResumenes from "./viewer/VisorResumenes.jsx";
 import HojaAmpliada from "./viewer/HojaAmpliada.jsx";
 import FichasAmpliadas from "./viewer/FichasAmpliadas.jsx";
@@ -101,6 +103,13 @@ export default function VisorCartasKT() {
   // pantalla, no un sitio al que volver.
   const [hojaAmpliada, setHojaAmpliada] = useState(null);
   const [verFichas, setVerFichas] = useState(false);
+  // Miniaturas de papel: si está abierto el diálogo, y la plancha ya resuelta
+  // (qué unidades y con qué foto) que hay que imprimir. Mientras haya una
+  // plancha resuelta, la hoja de impresión es la de miniaturas y no la del
+  // mazo: las dos comparten el mismo `.hoja-impresion` y no tiene sentido
+  // imprimir la baraja entera al pedir solo las miniaturas.
+  const [verMiniaturas, setVerMiniaturas] = useState(false);
+  const [planchaMiniaturas, setPlanchaMiniaturas] = useState(null);
   // Mazos de impresión: `mazoImpresion` es la pantalla ("1" = la lista, o el id
   // de uno abierto) y `aMazo` las referencias que espera el popup de añadir.
   const [mazoImpresion, setMazoImpresion] = useState(inicial.imprimir);
@@ -233,6 +242,12 @@ export default function VisorCartasKT() {
   // Las fichas son de la baraja, no de la tirada: se miran en pantalla aunque
   // no se vayan a imprimir, y por eso no dependen de `incluirFichas`.
   const fichas = mazo && mazo.fichas && mazo.fichas.lista && mazo.fichas.lista.length ? mazo.fichas : null;
+  // Unidades con al menos una foto de miniatura, para el botón "Miniaturas" de
+  // la barra y el diálogo de impresión (ver viewer/DialogoImprimirMiniaturas.jsx).
+  const cartasConMiniaturas = useMemo(
+    () => cartas.filter((c) => c.miniaturas && c.miniaturas.length),
+    [cartas]
+  );
 
   useEffect(() => {
     try {
@@ -311,6 +326,8 @@ export default function VisorCartasKT() {
     setNarrando(false);
     setHojaAmpliada(null);
     setVerFichas(false);
+    setVerMiniaturas(false);
+    setPlanchaMiniaturas(null);
   };
 
   // Volver a la portada es cambiar de baraja a "ninguna", más cerrar el diálogo
@@ -745,6 +762,8 @@ export default function VisorCartasKT() {
           onImprimir={() => setDialogo(true)}
           hayFichas={!!fichas}
           onFichas={() => setVerFichas(true)}
+          hayMiniaturas={cartasConMiniaturas.length > 0}
+          onMiniaturas={() => setVerMiniaturas(true)}
           hayVersiones={hayVersiones}
           pendientes={pendientes && !pendientes.desconocido ? pendientes.cartas.length : 0}
           onVersiones={() => setVerVersiones(true)}
@@ -827,6 +846,20 @@ export default function VisorCartasKT() {
         />
       )}
 
+      {verMiniaturas && (
+        <DialogoImprimirMiniaturas
+          cartas={cartasConMiniaturas}
+          onCerrar={() => {
+            setVerMiniaturas(false);
+            setPlanchaMiniaturas(null);
+          }}
+          onImprimir={(piezas) => {
+            flushSync(() => setPlanchaMiniaturas(piezas));
+            window.print();
+          }}
+        />
+      )}
+
       {verVersiones && hayVersiones && (
         <DialogoVersiones
           baraja={mazo}
@@ -868,16 +901,20 @@ export default function VisorCartasKT() {
         />
       )}
 
-      <HojasImpresion
-        cartas={seleccionadas}
-        formato={formato}
-        incluirDorsos={incluirDorsos}
-        nombreMazo={nombreMazo}
-        icono={iconoMazoUrl}
-        fichas={fichas}
-        incluirFichas={incluirFichas}
-        desvio={desvio}
-      />
+      {planchaMiniaturas ? (
+        <HojasMiniaturas piezas={planchaMiniaturas} nombreMazo={nombreMazo} />
+      ) : (
+        <HojasImpresion
+          cartas={seleccionadas}
+          formato={formato}
+          incluirDorsos={incluirDorsos}
+          nombreMazo={nombreMazo}
+          icono={iconoMazoUrl}
+          fichas={fichas}
+          incluirFichas={incluirFichas}
+          desvio={desvio}
+        />
+      )}
     </>
   );
 }

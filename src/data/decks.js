@@ -5,6 +5,11 @@ import { normalizarTipoBaraja } from "./tipos-baraja.js";
 
 export const CLAVE_DEFECTO = "juego:base";
 
+// Altura por defecto de una miniatura de papel (cm) cuando la carta no la
+// declara: una base de 32 mm es la más común en Kill Team, así que la figura
+// suele rondar los 4 cm de alto. Ver print/HojasMiniaturas.jsx.
+export const ALTO_MINIATURA_CM_DEFECTO = 4;
+
 const CAMPOS_CARTA = {
   tipo: "tacop",
   arquetipo: "ninguno",
@@ -49,6 +54,21 @@ export function migrarCarta(c, i) {
     nombre: a.nombre || a.titulo || "",
     coste: a.coste || "",
     texto: a.texto || "",
+  }));
+  // Fotos de la miniatura del operativo, para recortar como proxy de mesa en
+  // partidas de prueba: cada una declara si es a color o en blanco y negro (para
+  // colorear a mano), y una carta puede traer varias del mismo modo. Cualquier
+  // otro valor de `modo` cuenta como "color", igual que una carta sin declararlo.
+  // `alto` es la altura real de ESA foto en cm (de la base a la cabeza): la
+  // plancha dibuja cada pieza a ese tamaño, así que dos unidades de porte
+  // distinto no salen recortadas del mismo alto. Por foto y no por carta,
+  // porque un mismo operativo puede traer una foto de cuerpo entero y otra
+  // recortada más de cerca, con alturas de imagen distintas.
+  base.miniaturas = (Array.isArray(c.miniaturas) ? c.miniaturas : []).map((m, j) => ({
+    id: m.id || "m" + j,
+    imagen: m.imagen || "",
+    modo: m.modo === "bn" ? "bn" : "color",
+    alto: Number(m.alto) > 0 ? Number(m.alto) : ALTO_MINIATURA_CM_DEFECTO,
   }));
   return base;
 }

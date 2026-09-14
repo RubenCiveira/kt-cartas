@@ -218,6 +218,53 @@ tamaños sí se respeta: un marcador de 25 mm se ve mayor que una ficha de 20. E
 pantalla. El botón sale en el visor normal y en el de resúmenes, y mirar las
 fichas no las mete en la impresión: eso sigue siendo `incluirFichas`.
 
+## Miniaturas de papel
+
+Una `datacard` puede traer `miniaturas`: fotos de la miniatura del operativo
+recortadas por su silueta, para plantar sobre la mesa en partidas de prueba sin
+las miniaturas pintadas. Cada foto declara `modo` (`"color"` o `"bn"`, ver
+`../app-write/CLAUDE.md`); es contenido opcional que aporta quien monta la
+baraja, no algo que salga de un PDF de reglas.
+
+**Botón aparte de imprimir**, no una casilla del diálogo del mazo: pedir
+"solo blanco y negro" o elegir qué unidades entran es una decisión de esta
+tirada, no de la baraja, y mezclarlo con «imprimir cartas» habría forzado a
+decidir las dos cosas a la vez. Sale en la barra (`hayMiniaturas`) solo si
+alguna carta trae `miniaturas`, y abre `viewer/DialogoImprimirMiniaturas.jsx`.
+
+**Dos pasos.** El primero decide **qué unidades entran**. La casilla "solo
+blanco y negro" fija el modo pedido; una unidad sin foto de ese modo pero con
+foto del otro no se descarta en silencio ni se cuela con el modo que no se
+pidió: sale con un aviso (`.aviso-fila`) y un botón para usarla igualmente, que
+por defecto está sin marcar (se descarta) — porque callarse y usar cualquier
+foto sería mezclar sin avisar lo que el usuario pidió separado. El segundo paso
+deja elegir, por unidad, **cuál foto** entra cuando hay más de una del mismo
+modo (poses distintas). No hay paso 3: el botón de imprimir del segundo paso ya
+llama a `window.print()`.
+
+`print/HojasMiniaturas.jsx` pinta la plancha ya resuelta —qué unidad con qué
+imagen—, igual que `HojaFichas` pinta la de fichas: una pieza por caja, con
+contorno de corte. La caja **no tiene un tamaño fijo compartido**, a
+diferencia de una ficha: cada foto declara su propio `alto` en cm
+(`data/decks.js`, ver `../app-write/CLAUDE.md`), porque un operativo grande y
+uno normal no pueden salir recortados a la misma altura sin que el proxy
+engañe sobre la mesa. La caja es cuadrada —mismo ancho que alto— y
+`object-fit: contain` encaja la foto sin deformarla; de sobra para una figura
+de pie, que es más alta que ancha. Comparte con `HojaFichas` la etiqueta de
+hoja y el pie (`.etiqueta-hoja`, `.pie-fichas`), fuera de `@media print`; su
+propia clase es `.miniatura-corte`.
+
+**Solo una plancha de impresión a la vez.** `HojasImpresion` (las cartas del
+mazo) y `HojasMiniaturas` comparten `.hoja-impresion`, y las dos a la vez
+imprimirían el mazo entero cuando lo que se pidió fue solo las miniaturas. Por
+eso `App.jsx` monta una u otra, nunca las dos: mientras haya una plancha de
+miniaturas resuelta (`planchaMiniaturas`), esa es la que se imprime. El diálogo
+resuelve la plancha con `flushSync` antes de llamar a `window.print()` —igual
+que la transición de vista de la carta grande (`conTransicion`)—, porque
+`window.print()` es síncrono y usa el DOM tal como está en ese momento; sin
+`flushSync` imprimiría la hoja de la tirada anterior, no la que se acaba de
+resolver.
+
 ## Mazos de impresión
 
 Listas de cartas **de varias barajas** que el usuario arma para reimprimir de

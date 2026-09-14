@@ -27,6 +27,8 @@ export default function BarraSuperior({
   onImprimir,
   hayFichas,
   onFichas,
+  hayMiniaturas,
+  onMiniaturas,
   // Solo cuando la baraja trae historial de erratas; `pendientes` es cuántas
   // cartas quedan por reimprimir según el registro de impresiones, y va en el
   // botón porque es el dato que hace mirar (o no) el diálogo.
@@ -88,6 +90,15 @@ export default function BarraSuperior({
         {hayFichas && (
           <button className="btn btn-mini" onClick={onFichas} title="Ver las fichas de la baraja a tamaño real">
             ●<span className="larga"> Fichas</span>
+          </button>
+        )}
+        {hayMiniaturas && (
+          <button
+            className="btn btn-mini"
+            onClick={onMiniaturas}
+            title="Imprimir una plancha con las fotos de miniatura para recortar"
+          >
+            ◈<span className="larga"> Miniaturas</span>
           </button>
         )}
         {hayVersiones && (

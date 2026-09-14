@@ -6,17 +6,30 @@ import iconoPorDefecto from "./icons/default.png";
 
 const cacheAssets = new Map();
 
+// TEMPORAL: para probar imágenes de miniatura locales (public/test-miniaturas/)
+// arrastrando un JSON de baraja, sin publicarlas antes en Appwrite. Un valor
+// que ya es una ruta o URL se sirve tal cual; cualquier otro sigue yendo al
+// bucket como siempre. Quitar cuando se termine de probar.
+function esRutaLocal(valor) {
+  return /^(https?:)?\/\//.test(valor) || valor.startsWith("/");
+}
+
 export function assetUrl(fileId) {
-  return fileId ? fileUrl(fileId) : null;
+  if (!fileId) return null;
+  return esRutaLocal(fileId) ? fileId : fileUrl(fileId);
 }
 
 export function useAssetUrl(fileId) {
-  const [url, setUrl] = useState(() => urlCacheada(fileId));
+  const [url, setUrl] = useState(() => (fileId && esRutaLocal(fileId) ? fileId : urlCacheada(fileId)));
 
   useEffect(() => {
     let cancelado = false;
     if (!fileId) {
       setUrl(null);
+      return () => { cancelado = true; };
+    }
+    if (esRutaLocal(fileId)) {
+      setUrl(fileId);
       return () => { cancelado = true; };
     }
 

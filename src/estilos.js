@@ -532,6 +532,22 @@ label {
 .fila-sel:hover { border-color: var(--acento); }
 .fila-sel input { width: auto; }
 .fila-sel .nombre { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Fila de aviso del diálogo de miniaturas: una unidad sin foto del modo que se
+   ha pedido (p.ej. blanco y negro), que solo trae a color. */
+.aviso-fila {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  padding: 6px 8px; margin: 2px 0; border-radius: 6px; font-size: 12px;
+  color: #E0C77A; background: rgba(224, 168, 60, 0.09); border: 1px solid rgba(224, 168, 60, 0.35);
+}
+.aviso-fila .nombre { flex: 1 1 auto; min-width: 120px; }
+/* Elegir, por unidad, cuál de sus fotos entra en la plancha (segundo paso). */
+.miniaturas-opciones { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 10px; }
+.miniatura-opcion {
+  position: relative; padding: 0; background: transparent; cursor: pointer; line-height: 0;
+  border: 2px solid var(--linea); border-radius: 6px; overflow: hidden; opacity: 0.55;
+}
+.miniatura-opcion.activa { opacity: 1; border-color: var(--acento); }
+.miniatura-opcion img { display: block; width: 60px; height: 78px; object-fit: contain; background: #FFFFFF; }
 .rejilla-sel { display: flex; flex-wrap: wrap; gap: 8px; }
 .sel-carta {
   position: relative; padding: 0; background: transparent; cursor: pointer; line-height: 0;
@@ -730,6 +746,20 @@ label {
   font-family: 'Barlow', sans-serif; font-size: 2.6mm; line-height: 1.4;
   color: #666; text-align: center; margin: 4mm auto 0; max-width: 150mm;
 }
+
+/* ---------- Hoja de miniaturas de papel ---------- */
+/* Misma plancha que las fichas (etiqueta, rejilla, pie), pieza aparte porque el
+   recorte es una figura de pie y no un token: caja más alta que ancha.
+   FLEX y no grid (a propósito, a diferencia de .ficha-corte): con
+   display:grid + place-items:center, Chrome recorta una imagen alta y
+   estrecha con object-fit:contain aunque la caja mida lo que tiene que medir
+   —bug de Chromium, no del CSS—; con flexbox la misma imagen se ve entera.
+   Una miniatura de pie es justo la proporción que lo dispara. */
+.miniatura-corte {
+  outline: 0.2mm dashed #999;
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+}
+.miniatura-corte img { width: 100%; height: 100%; object-fit: contain; }
 
 /* ---------- Impresión ---------- */
 @page { size: A4; margin: 6mm; }
