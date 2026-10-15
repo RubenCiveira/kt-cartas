@@ -27,7 +27,13 @@ self.addEventListener("fetch", (event) => {
 
   event.respondWith(
     caches.match(request).then((cached) => cached || fetch(request).then((response) => {
-      if (response.ok) caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()));
+      // La copia se saca ya: cuando abra la cache, la pagina habra leido la
+      // respuesta y no se podra clonar. waitUntil mantiene vivo el worker
+      // hasta que termine de guardarla.
+      if (response.ok) {
+        const copia = response.clone();
+        event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.put(request, copia)));
+      }
       return response;
     }))
   );
