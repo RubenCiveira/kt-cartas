@@ -14,6 +14,7 @@
 // haga falta, y `break-inside: avoid` (ver estilos.js) impide que parta un disco
 // o una fila de la tabla, que no se podrían recortar ni leer.
 
+import { useId } from "react";
 import { useAssetUrl } from "../assets.js";
 
 const PEANA_MM = 32;
@@ -68,8 +69,54 @@ function FichaCenital({ ficha, mm }) {
   return (
     <div className="ficha-cenital" style={{ width: mm + "mm", height: mm + "mm", fontSize: mm * 0.12 + "mm" }}>
       {ficha.foto ? <FotoEncuadrada foto={ficha.foto} centro={ficha.fotoCentro} /> : <span className="ficha-cenital-iniciales">{iniciales}</span>}
-      <span className="ficha-cenital-nombre">{ficha.nombre}</span>
+      <BannerCurvo nombre={ficha.nombre} />
     </div>
+  );
+}
+
+// El banner del nombre sigue el borde del disco: una franja curva en la mitad
+// de abajo y el texto sobre un arco (textPath), leyéndose de izquierda a
+// derecha y derecho. Así el nombre aprovecha la circunferencia en vez de una
+// cuerda recta que se come las esquinas. Va en un SVG de 100 × 100 unidades
+// encima del disco, de modo que mide lo mismo en proporción a 15 y a 28 mm.
+//
+// Si el nombre no cabe en el arco se comprime (textLength) en vez de cortarse:
+// un nombre a medias no sirve para reconocer al agente sobre la mesa.
+const R_BANDA = 41;     // radio del centro de la franja
+const ANCHO_BANDA = 16; // grosor: llega al borde y lo recorta el propio disco
+const R_TEXTO = 44.5;   // radio de la línea base: las letras crecen hacia el centro
+const CUERPO = 9;       // tamaño de letra, en unidades del SVG
+const ARCO = [165, 15]; // grados de inicio y fin del texto (90 es abajo)
+const ARCO_BANDA = [172, 8]; // la franja algo más larga que el texto, sin subir a los lados
+
+const punto = (r, grados) => {
+  const a = (grados * Math.PI) / 180;
+  return `${(50 + r * Math.cos(a)).toFixed(2)},${(50 + r * Math.sin(a)).toFixed(2)}`;
+};
+// Arco por abajo, de izquierda a derecha (barrido en sentido antihorario en
+// pantalla, que con la y hacia abajo es sweep-flag 0).
+const arco = (r, desde, hasta) => `M${punto(r, desde)} A${r},${r} 0 0 0 ${punto(r, hasta)}`;
+
+function BannerCurvo({ nombre }) {
+  const id = "arco-" + useId().replace(/:/g, "");
+  const disponible = (R_TEXTO * (ARCO[0] - ARCO[1]) * Math.PI) / 180;
+  // Ancho medio de una versal de Barlow Condensed en negrita: ~0,5 del cuerpo.
+  const comprimir = nombre.length * CUERPO * 0.5 > disponible;
+  return (
+    <svg className="ficha-cenital-arco" viewBox="0 0 100 100" aria-hidden="true">
+      <path d={arco(R_BANDA, ARCO_BANDA[0], ARCO_BANDA[1])} fill="none" stroke="rgba(20, 20, 20, 0.82)" strokeWidth={ANCHO_BANDA} />
+      <path id={id} d={arco(R_TEXTO, ARCO[0], ARCO[1])} fill="none" />
+      <text fontSize={CUERPO}>
+        <textPath
+          href={"#" + id}
+          startOffset="50%"
+          textAnchor="middle"
+          {...(comprimir ? { textLength: disponible, lengthAdjust: "spacingAndGlyphs" } : {})}
+        >
+          {nombre}
+        </textPath>
+      </text>
+    </svg>
   );
 }
 

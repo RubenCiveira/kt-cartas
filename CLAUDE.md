@@ -292,7 +292,10 @@ escuadra, y agotadas, el nombre del operativo numerado. Y la escala:
 `print/HojasCenitales.jsx` pinta la plancha resuelta: el disco lleva la `foto`
 de la ficha de datos recortada con su **encuadre** (`fotoCentro`, porcentajes de
 `object-position` que calcula `centrar-fotos.mjs` en app-write) y el nombre en un
-banner; sin foto, las iniciales. El encuadre va en el estilo y no se calcula al
+**banner curvo** que sigue el borde del disco por abajo (`BannerCurvo`: una franja
+y un `textPath` en un SVG de 100 × 100 sobre el disco, igual en proporción a 15 y
+a 28 mm). Un nombre que no cabe en el arco se comprime con `textLength` en vez de
+cortarse. Sin foto, las iniciales. El encuadre va en el estilo y no se calcula al
 cargar la imagen a propósito: `window.print()` no espera a las imágenes, y un
 encuadre calculado en `onLoad` llegaría después de imprimir. `FotoEncuadrada` es
 la misma pieza en el disco y en el retrato del diálogo.
@@ -303,6 +306,14 @@ la mitad—, orden, activado e incapacitado. **Todo en un solo flujo, sin saltos
 página forzados**: una escuadra corta sale en un folio. El navegador corta donde
 haga falta y `break-inside: avoid` impide partir un disco o una fila; la cabecera
 de la tabla se repite en cada página.
+
+**Bandas de ANJ.** Las fichas genéricas de JcE (Tropa, Recio, Pesado…) no son
+de ninguna facción y traen `familiaFotos` (el `familia-fotos` del JSON): una
+foto por familia —tiránidos, orkos, necrones…—. Si algún operativo la trae, el
+diálogo añade el desplegable **Familia de fotos** y los operativos que tengan
+esa familia salen con su foto; los demás, y la opción «Sin familia», con la
+`foto` de siempre. Así una misma ficha de ANJ imprime una banda de orkos o una
+de tiránidos.
 
 Como las miniaturas, `App.jsx` monta esta plancha **en lugar** de las hojas de
 cartas mientras haya una resuelta (`planchaCenitales`), y el diálogo la

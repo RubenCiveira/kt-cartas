@@ -767,11 +767,12 @@ label {
 .ficha-cenital-iniciales {
   font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 2.6em; color: #1A1A1A;
 }
-.ficha-cenital-nombre {
-  position: absolute; left: 0; right: 0; bottom: 0; padding: 0.15em 14% 0.55em;
-  background: rgba(20, 20, 20, 0.82); color: #FFF; text-align: center;
-  font-family: 'Barlow Condensed', sans-serif; font-weight: 700; line-height: 1;
-  text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+/* Banner curvo del nombre (BannerCurvo en HojasCenitales.jsx): la franja y el
+   texto los dibuja el SVG; aquí solo se le da la tipografía. */
+.ficha-cenital-arco { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ficha-cenital-arco text {
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 700; fill: #FFF;
+  text-transform: uppercase; letter-spacing: 0.04em;
 }
 
 /* Hoja de control de escuadra: una fila por agente. */

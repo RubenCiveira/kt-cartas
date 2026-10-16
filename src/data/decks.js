@@ -75,6 +75,19 @@ export function migrarCarta(c, i) {
   base.fotoCentro = centro && Number.isFinite(Number(centro.x)) && Number.isFinite(Number(centro.y))
     ? { x: Number(centro.x), y: Number(centro.y) }
     : null;
+  // Fotos alternativas por familia (raza) para las fichas genéricas de JcE: el
+  // diálogo de fichas cenitales deja elegir con cuál imprimir la banda. Cada
+  // entrada admite la ruta suelta o {foto, foto-centro}.
+  base.familiaFotos = {};
+  for (const [familia, valor] of Object.entries(c["familia-fotos"] || {})) {
+    const foto = typeof valor === "string" ? valor : valor && valor.foto;
+    if (!foto) continue;
+    const fc = typeof valor === "object" ? valor["foto-centro"] : null;
+    base.familiaFotos[familia] = {
+      foto,
+      fotoCentro: fc && Number.isFinite(Number(fc.x)) && Number.isFinite(Number(fc.y)) ? { x: Number(fc.x), y: Number(fc.y) } : null,
+    };
+  }
   // Nombres propios para las fichas cenitales; dentro de una baraja no se repiten.
   base.nombresSugeridos = (Array.isArray(c["nombres-sugeridos"]) ? c["nombres-sugeridos"] : [])
     .filter((n) => typeof n === "string" && n.trim());

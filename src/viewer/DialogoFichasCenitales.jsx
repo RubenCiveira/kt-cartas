@@ -13,6 +13,11 @@
 // (`nombresSugeridos`) que no use ya otra ficha de la escuadra; agotados, el
 // del operativo numerado. Se puede escribir otro, y la lista de sugerencias
 // sigue a mano en el desplegable del campo.
+//
+// Las fichas genéricas de ANJ de JcE no son de ninguna facción: traen
+// `familiaFotos`, una foto por familia (tiránidos, orkos…). Si alguna la trae,
+// el diálogo ofrece un desplegable de familia, y los operativos que la tengan
+// salen con esa foto; los que no, con la suya.
 
 import { useMemo, useState } from "react";
 import { FotoEncuadrada, TAMANOS_CENITALES } from "../print/HojasCenitales.jsx";
@@ -27,7 +32,7 @@ export function operativosDe(cartas) {
     if (!previo) {
       porTitulo.set(c.titulo, {
         titulo: c.titulo, foto: c.foto, fotoCentro: c.fotoCentro, stats: c.stats,
-        maximo: c.cantidadMaximo, sugeridos: c.nombresSugeridos,
+        maximo: c.cantidadMaximo, sugeridos: c.nombresSugeridos, familias: c.familiaFotos || {},
       });
     } else if (!previo.foto && c.foto) {
       Object.assign(previo, { foto: c.foto, fotoCentro: c.fotoCentro });
@@ -39,7 +44,21 @@ export function operativosDe(cartas) {
 const MAX_POR_OPERATIVO = 30; // solo para que un dedazo no genere cien discos
 
 export default function DialogoFichasCenitales({ cartas, onCerrar, onImprimir }) {
-  const operativos = useMemo(() => operativosDe(cartas), [cartas]);
+  const operativosBase = useMemo(() => operativosDe(cartas), [cartas]);
+  const familias = useMemo(
+    () => [...new Set(operativosBase.flatMap((op) => Object.keys(op.familias)))],
+    [operativosBase]
+  );
+  const [familia, setFamilia] = useState(() => familias[0] || "");
+  // Con familia elegida, la foto de cada operativo es la de esa familia si la
+  // tiene; el resto del diálogo no distingue.
+  const operativos = useMemo(
+    () => operativosBase.map((op) => {
+      const f = op.familias[familia];
+      return f ? { ...op, foto: f.foto, fotoCentro: f.fotoCentro } : op;
+    }),
+    [operativosBase, familia]
+  );
   const [tamano, setTamano] = useState("28mm");
   const [cuantos, setCuantos] = useState({});
   const [nombres, setNombres] = useState({});
@@ -98,6 +117,15 @@ export default function DialogoFichasCenitales({ cartas, onCerrar, onImprimir })
               ))}
             </select>
           </div>
+          {familias.length > 0 && (
+            <div>
+              <label>Familia de fotos</label>
+              <select value={familia} onChange={(e) => setFamilia(e.target.value)}>
+                {familias.map((f) => <option key={f} value={f}>{f}</option>)}
+                <option value="">Sin familia (foto de la ficha)</option>
+              </select>
+            </div>
+          )}
         </div>
 
         <div className="modal-cabecera" style={{ margin: "16px 0 8px" }}>
