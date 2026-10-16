@@ -64,6 +64,20 @@ export function migrarCarta(c, i) {
   // distinto no salen recortadas del mismo alto. Por foto y no por carta,
   // porque un mismo operativo puede traer una foto de cuerpo entero y otra
   // recortada más de cerca, con alturas de imagen distintas.
+  // Cuántos operativos de esta ficha admite el comando como máximo (el
+  // `cantidad-maximo` del JSON): es cuántas fichas cenitales se imprimen de él
+  // (ver print/HojaFichasCenitales.jsx). Sin el campo, uno.
+  base.cantidadMaximo = Number(c["cantidad-maximo"]) > 0 ? Math.floor(Number(c["cantidad-maximo"])) : 1;
+  // Encuadre de la foto al recortarla en el disco de la ficha cenital, en
+  // porcentajes de object-position (lo calcula centrar-fotos.mjs en app-write).
+  // Sin el campo, centrada.
+  const centro = c["foto-centro"];
+  base.fotoCentro = centro && Number.isFinite(Number(centro.x)) && Number.isFinite(Number(centro.y))
+    ? { x: Number(centro.x), y: Number(centro.y) }
+    : null;
+  // Nombres propios para las fichas cenitales; dentro de una baraja no se repiten.
+  base.nombresSugeridos = (Array.isArray(c["nombres-sugeridos"]) ? c["nombres-sugeridos"] : [])
+    .filter((n) => typeof n === "string" && n.trim());
   base.miniaturas = (Array.isArray(c.miniaturas) ? c.miniaturas : []).map((m, j) => ({
     id: m.id || "m" + j,
     imagen: m.imagen || "",

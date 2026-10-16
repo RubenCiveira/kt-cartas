@@ -29,9 +29,11 @@ import { escribirHash, leerHash } from "./estado-url.js";
 import HojasImpresion from "./print/HojasImpresion.jsx";
 import HojasResumen from "./print/HojasResumen.jsx";
 import HojasMiniaturas from "./print/HojasMiniaturas.jsx";
+import HojasCenitales from "./print/HojasCenitales.jsx";
 import DialogoImpresion from "./print/DialogoImpresion.jsx";
 import DialogoImpresionResumen from "./print/DialogoImpresionResumen.jsx";
 import DialogoImprimirMiniaturas from "./viewer/DialogoImprimirMiniaturas.jsx";
+import DialogoFichasCenitales from "./viewer/DialogoFichasCenitales.jsx";
 import VisorResumenes from "./viewer/VisorResumenes.jsx";
 import HojaAmpliada from "./viewer/HojaAmpliada.jsx";
 import FichasAmpliadas from "./viewer/FichasAmpliadas.jsx";
@@ -110,6 +112,10 @@ export default function VisorCartasKT() {
   // imprimir la baraja entera al pedir solo las miniaturas.
   const [verMiniaturas, setVerMiniaturas] = useState(false);
   const [planchaMiniaturas, setPlanchaMiniaturas] = useState(null);
+  // Fichas cenitales: lo mismo que las miniaturas, con su propio diálogo y su
+  // plancha (ver viewer/DialogoFichasCenitales.jsx).
+  const [verCenitales, setVerCenitales] = useState(false);
+  const [planchaCenitales, setPlanchaCenitales] = useState(null);
   // Mazos de impresión: `mazoImpresion` es la pantalla ("1" = la lista, o el id
   // de uno abierto) y `aMazo` las referencias que espera el popup de añadir.
   const [mazoImpresion, setMazoImpresion] = useState(inicial.imprimir);
@@ -249,6 +255,8 @@ export default function VisorCartasKT() {
     [cartas]
   );
 
+  const hayOperativos = useMemo(() => cartas.some((c) => c.tipo === "datacard"), [cartas]);
+
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY_FORMATO, formatoId);
@@ -328,6 +336,8 @@ export default function VisorCartasKT() {
     setVerFichas(false);
     setVerMiniaturas(false);
     setPlanchaMiniaturas(null);
+    setVerCenitales(false);
+    setPlanchaCenitales(null);
   };
 
   // Volver a la portada es cambiar de baraja a "ninguna", más cerrar el diálogo
@@ -764,6 +774,8 @@ export default function VisorCartasKT() {
           onFichas={() => setVerFichas(true)}
           hayMiniaturas={cartasConMiniaturas.length > 0}
           onMiniaturas={() => setVerMiniaturas(true)}
+          hayCenitales={hayOperativos}
+          onCenitales={() => setVerCenitales(true)}
           hayVersiones={hayVersiones}
           pendientes={pendientes && !pendientes.desconocido ? pendientes.cartas.length : 0}
           onVersiones={() => setVerVersiones(true)}
@@ -860,6 +872,20 @@ export default function VisorCartasKT() {
         />
       )}
 
+      {verCenitales && (
+        <DialogoFichasCenitales
+          cartas={cartas}
+          onCerrar={() => {
+            setVerCenitales(false);
+            setPlanchaCenitales(null);
+          }}
+          onImprimir={(plancha) => {
+            flushSync(() => setPlanchaCenitales(plancha));
+            window.print();
+          }}
+        />
+      )}
+
       {verVersiones && hayVersiones && (
         <DialogoVersiones
           baraja={mazo}
@@ -903,6 +929,8 @@ export default function VisorCartasKT() {
 
       {planchaMiniaturas ? (
         <HojasMiniaturas piezas={planchaMiniaturas} nombreMazo={nombreMazo} />
+      ) : planchaCenitales ? (
+        <HojasCenitales plancha={planchaCenitales} nombreMazo={nombreMazo} />
       ) : (
         <HojasImpresion
           cartas={seleccionadas}

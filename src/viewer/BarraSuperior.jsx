@@ -29,6 +29,8 @@ export default function BarraSuperior({
   onFichas,
   hayMiniaturas,
   onMiniaturas,
+  hayCenitales,
+  onCenitales,
   // Solo cuando la baraja trae historial de erratas; `pendientes` es cuántas
   // cartas quedan por reimprimir según el registro de impresiones, y va en el
   // botón porque es el dato que hace mirar (o no) el diálogo.
@@ -99,6 +101,15 @@ export default function BarraSuperior({
             title="Imprimir una plancha con las fotos de miniatura para recortar"
           >
             ◈<span className="larga"> Miniaturas</span>
+          </button>
+        )}
+        {hayCenitales && (
+          <button
+            className="btn btn-mini"
+            onClick={onCenitales}
+            title="Imprimir fichas redondas de los agentes y su hoja de control de escuadra"
+          >
+            ◉<span className="larga"> Fichas cenitales</span>
           </button>
         )}
         {hayVersiones && (

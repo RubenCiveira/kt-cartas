@@ -265,6 +265,50 @@ que la transición de vista de la carta grande (`conTransicion`)—, porque
 `flushSync` imprimiría la hoja de la tirada anterior, no la que se acaba de
 resolver.
 
+## Fichas cenitales
+
+Discos de peana con la foto de cada agente, para jugar sobre la escenografía 2D
+de papel, y una **hoja de control de escuadra** con los mismos agentes. Como las
+miniaturas, es un **botón aparte** («Fichas cenitales», `hayCenitales`: sale si
+la baraja tiene alguna `datacard`) con su propio diálogo,
+`viewer/DialogoFichasCenitales.jsx`, y no una casilla del de imprimir: aquí se
+decide por agente cuántos y cómo se llaman, que es una decisión de la partida y
+no de la baraja.
+
+El diálogo enseña un operativo por título —la ficha de continuación repite
+título— con un contador **sin tope** (30 por operativo, contra dedazos):
+`cantidadMaximo` (el `cantidad-maximo` del JSON) solo se enseña como lo que
+admite el comando y avisa al pasarlo, porque JcE y escenarios piden más. Cada
+copia lleva un campo de nombre con las sugerencias de `nombresSugeridos` en un
+`datalist`; vacío, toma la primera sugerida que no use ya otra ficha de la
+escuadra, y agotadas, el nombre del operativo numerado. Y la escala:
+
+- **28 mm**: peana estándar de 32 mm.
+- **15 mm**: esa peana al 53,15 % (17 mm), la escala de las láminas de
+  escenografía de `app-write/impresion/15mm/`. La constante de
+  `print/HojasCenitales.jsx` tiene que casar con `ESCALAS` de
+  `app-write/scripts/generar-escenografia.mjs`.
+
+`print/HojasCenitales.jsx` pinta la plancha resuelta: el disco lleva la `foto`
+de la ficha de datos recortada con su **encuadre** (`fotoCentro`, porcentajes de
+`object-position` que calcula `centrar-fotos.mjs` en app-write) y el nombre en un
+banner; sin foto, las iniciales. El encuadre va en el estilo y no se calcula al
+cargar la imagen a propósito: `window.print()` no espera a las imágenes, y un
+encuadre calculado en `onLoad` llegaría después de imprimir. `FotoEncuadrada` es
+la misma pieza en el disco y en el retrato del diálogo.
+
+Debajo de los discos va la hoja de control: una fila por agente con LPA, MOV y
+SALV, una casilla por herida —sombreadas las que lo dejan herido, por debajo de
+la mitad—, orden, activado e incapacitado. **Todo en un solo flujo, sin saltos de
+página forzados**: una escuadra corta sale en un folio. El navegador corta donde
+haga falta y `break-inside: avoid` impide partir un disco o una fila; la cabecera
+de la tabla se repite en cada página.
+
+Como las miniaturas, `App.jsx` monta esta plancha **en lugar** de las hojas de
+cartas mientras haya una resuelta (`planchaCenitales`), y el diálogo la
+resuelve con `flushSync` antes de `window.print()`. No se apunta en el registro
+de impresiones: no son cartas.
+
 ## Mazos de impresión
 
 Listas de cartas **de varias barajas** que el usuario arma para reimprimir de

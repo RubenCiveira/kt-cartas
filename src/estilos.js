@@ -747,6 +747,94 @@ label {
   color: #666; text-align: center; margin: 4mm auto 0; max-width: 150mm;
 }
 
+/* ---------- Fichas cenitales ---------- */
+/* Un disco por agente (print/HojasCenitales.jsx). El diámetro y el cuerpo de
+   letra llegan en línea, en mm, desde la escala elegida. La línea de corte es
+   el outline, que sigue el border-radius y queda por fuera del disco. La foto
+   es la de la ficha de datos, con su encuadre (fotoCentro). */
+.ficha-cenital {
+  position: relative; box-sizing: border-box; border-radius: 50%; overflow: hidden;
+  border: 0.45mm solid #1A1A1A; background: #D9D3C7;
+  outline: 0.2mm dashed #999; outline-offset: 0.7mm;
+  display: flex; align-items: center; justify-content: center;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  break-inside: avoid;
+}
+.ficha-cenital img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover;
+}
+.ficha-cenital-iniciales {
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 2.6em; color: #1A1A1A;
+}
+.ficha-cenital-nombre {
+  position: absolute; left: 0; right: 0; bottom: 0; padding: 0.15em 14% 0.55em;
+  background: rgba(20, 20, 20, 0.82); color: #FFF; text-align: center;
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 700; line-height: 1;
+  text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* Hoja de control de escuadra: una fila por agente. */
+/* Va justo detrás de los discos, sin salto forzado: un folio si cabe. La
+   cabecera no se queda sola al pie de una página, y ninguna fila se parte. */
+.control-escuadra { font-family: 'Barlow Condensed', sans-serif; color: #1A1A1A; margin-top: 8mm; }
+.control-cabecera, .control-tabla thead { break-after: avoid; break-inside: avoid; }
+.control-tabla tr { break-inside: avoid; }
+.control-cabecera {
+  display: flex; justify-content: space-between; align-items: flex-end;
+  border-bottom: 0.6mm solid #1A1A1A; padding-bottom: 2mm; margin-bottom: 3mm;
+}
+.control-titulo { font-size: 7mm; font-weight: 700; text-transform: uppercase; line-height: 1; }
+.control-mazo { font-size: 3.4mm; color: #555; text-transform: uppercase; letter-spacing: 0.05em; }
+.control-partida { display: flex; gap: 4mm; padding-right: 2mm; font-size: 3.4mm; align-items: center; }
+.control-casilla {
+  display: inline-block; width: 3mm; height: 3mm; border: 0.3mm solid #1A1A1A;
+  vertical-align: -0.4mm; margin: 0 0.6mm 0 1.4mm;
+}
+.control-tabla { width: 100%; border-collapse: collapse; font-size: 3.2mm; }
+.control-tabla th {
+  text-align: left; font-size: 2.8mm; text-transform: uppercase; letter-spacing: 0.05em;
+  border-bottom: 0.3mm solid #1A1A1A; padding: 1mm 1.2mm;
+}
+.control-tabla td {
+  border-bottom: 0.2mm solid #BBB; padding: 1.6mm 1.2mm; vertical-align: middle;
+  text-align: center; height: 11mm;
+}
+.control-tabla td:first-child, .control-tabla th:first-child { text-align: left; }
+.control-nombre { font-size: 4mm; font-weight: 700; text-transform: uppercase; line-height: 1.05; }
+.control-tipo { font-size: 2.6mm; color: #666; line-height: 1.1; }
+.control-heridas { display: flex; flex-wrap: wrap; gap: 0.6mm; max-width: 52mm; }
+.control-herida {
+  width: 4.2mm; height: 4.2mm; border: 0.3mm solid #1A1A1A; box-sizing: border-box;
+  font-size: 2.2mm; line-height: 3.6mm; text-align: center; color: #888;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+.control-herida.herido { background: #DDD; }
+.control-estado { text-align: left !important; white-space: nowrap; font-size: 3mm; }
+.control-estado > span { display: block; line-height: 1.5; }
+.control-estado .control-casilla { margin-left: 0; }
+.control-notas { width: 30%; }
+
+/* Diálogo de fichas cenitales */
+.cenital-fila {
+  border: 1px solid transparent; border-radius: 6px; padding: 4px 6px; margin-bottom: 2px; opacity: 0.75;
+}
+.cenital-fila.activa { opacity: 1; background: #182233; border-color: var(--linea); }
+.cenital-cabeza { display: flex; align-items: center; gap: 8px; }
+.cenital-cabeza .nombre { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.cenital-retrato {
+  width: 32px; height: 32px; border-radius: 50%; overflow: hidden; flex: none; background: #2a3448;
+}
+.cenital-retrato img { width: 100%; height: 100%; object-fit: cover; }
+.cenital-contador { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.cenital-contador b { min-width: 1.4em; text-align: center; }
+.cenital-exceso { color: #E9A23B; font-size: 12px; }
+.cenital-nombres {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 4px;
+  margin: 6px 0 2px 40px;
+}
+.cenital-nombres input { width: 100%; box-sizing: border-box; font-size: 13px; }
+
 /* ---------- Hoja de miniaturas de papel ---------- */
 /* Misma plancha que las fichas (etiqueta, rejilla, pie), pieza aparte porque el
    recorte es una figura de pie y no un token: caja más alta que ancha.
