@@ -43,17 +43,6 @@ export default function CartaFace({ carta, resaltar = null }) {
   const esReglas = carta.tipo === "reglas" || carta.tipo === "glosario";
   const stats = carta.stats || {};
   const armas = Array.isArray(carta.armas) ? carta.armas : [];
-  // La columna de iconos solo existe si la baraja dice de qué tipo es alguna de
-  // sus armas. Una baraja anterior a este campo se maqueta exactamente como
-  // antes —mismas anchuras, mismo alto de fila—, en vez de reservar un hueco
-  // vacío que estrecharía el nombre del arma sin dar nada a cambio.
-  const conIconoArma = armas.some((a) => a.tipo === "distancia" || a.tipo === "combate");
-  // La pista del icono es su ancho (1,73 mm de alto por la proporción 26:12 del
-  // viewBox = 3,75 mm) más un pelo de aire hasta el nombre. Va atada al `ALTO`
-  // de `IconoArma`: si allí cambia el tamaño, este número cambia con él.
-  const columnasArmas = conIconoArma
-    ? "3.95mm 1fr 6.5mm 7mm 8.5mm 1.3fr"
-    : "1fr 6.5mm 7mm 8.5mm 1.3fr";
   const acciones = Array.isArray(carta.acciones) ? carta.acciones : [];
   const fotoUrl = useAssetUrl(carta.foto);
   const compacto = Array.isArray(carta.compacto || carta.compactar) ? (carta.compacto || carta.compactar) : [];
@@ -252,94 +241,11 @@ export default function CartaFace({ carta, resaltar = null }) {
           {fotoUrl && (
             <img src={fotoUrl} alt="" style={{ height: "10mm", alignSelf: "center", flex: "0 0 auto" }} />
           )}
-          {[
-            { k: "LPA", clave: "apl", v: stats.apl },
-            { k: "MOV", clave: "mov", v: stats.mov },
-            { k: "SALV", clave: "salv", v: stats.salv },
-            { k: "HER", clave: "her", v: stats.her },
-          ].map((s, i) => (
-            <div
-              key={s.k}
-              style={{
-                flex: "0 0 auto",
-                width: "9.5mm",
-                background: "#14181F",
-                color: "#F5F0E4",
-                textAlign: "center",
-                padding: "0.9mm 0 0.7mm",
-                borderRadius: i === 3 ? "0 0.8mm 0.8mm 0" : 0,
-                ...marcaStat(s.clave),
-              }}
-            >
-              <div
-                style={{
-                  fontFamily: "'Barlow Condensed', sans-serif",
-                  fontWeight: 700,
-                  fontSize: "2mm",
-                  letterSpacing: "0.06em",
-                  color: "#E0876B",
-                }}
-              >
-                {s.k}
-              </div>
-              <div style={{ fontWeight: 600, fontSize: "3.2mm", lineHeight: 1.1 }}>{s.v || "—"}</div>
-            </div>
-          ))}
+          <AtributosFicha stats={stats} marcaStat={marcaStat} />
         </div>
       )}
 
-      {esDatacard && armas.length > 0 && (
-        <div style={{ padding: "0 2.5mm 1.4mm" }}>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: columnasArmas,
-              gap: "0 1mm",
-              fontFamily: "'Barlow Condensed', sans-serif",
-              fontWeight: 700,
-              fontSize: "2.2mm",
-              letterSpacing: "0.06em",
-              color: "#F5F0E4",
-              background: arq.color,
-              borderRadius: "1mm 1mm 0 0",
-              padding: "0.7mm 1.4mm",
-            }}
-          >
-            {conIconoArma && <span />}
-            <span>NOMBRE</span>
-            <span style={{ textAlign: "center" }}>ATQ</span>
-            <span style={{ textAlign: "center" }}>IMP.</span>
-            <span style={{ textAlign: "center" }}>DAÑO</span>
-            <span>REGLAS DE ARMAS</span>
-          </div>
-          {armas.map((a, i) => (
-            <div
-              key={a.id || i}
-              style={{
-                display: "grid",
-                gridTemplateColumns: columnasArmas,
-                gap: "0 1mm",
-                alignItems: "center",
-                fontSize: "2.6mm",
-                padding: "0.7mm 1.4mm",
-                background: i % 2 === 0 ? "#F1F1F1" : "#FFFFFF",
-                borderLeft: `0.35mm solid ${arq.color}`,
-                borderRight: `0.35mm solid ${arq.color}`,
-                borderBottom: i === armas.length - 1 ? `0.35mm solid ${arq.color}` : "none",
-                borderRadius: i === armas.length - 1 ? "0 0 1mm 1mm" : 0,
-                ...marca("armas", i),
-              }}
-            >
-              {conIconoArma && <IconoArma tipo={a.tipo} color={arq.color} />}
-              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.nombre}</span>
-              <span style={{ textAlign: "center" }}>{a.atq}</span>
-              <span style={{ textAlign: "center" }}>{a.imp}</span>
-              <span style={{ textAlign: "center" }}>{a.dn}</span>
-              <span>{a.reglas || "-"}</span>
-            </div>
-          ))}
-        </div>
-      )}
+      {esDatacard && armas.length > 0 && <TablaArmas armas={armas} color={arq.color} marca={marca} />}
 
       <div
         style={{
@@ -432,39 +338,7 @@ export default function CartaFace({ carta, resaltar = null }) {
             </div>
           ))}
         {acciones.map((a, i) => (
-          <div
-            key={a.id}
-            style={{
-              margin: esDatacard ? "0.8mm 0 0.8mm" : "1mm 0 1.8mm",
-              border: `0.4mm solid ${COLOR_ACCION}`,
-              borderRadius: "1mm",
-              overflow: "hidden",
-              breakInside: "avoid",
-              ...marca("acciones", i),
-            }}
-          >
-            <div
-              style={{
-                background: COLOR_ACCION,
-                color: "#F5F0E4",
-                display: "flex",
-                justifyContent: "space-between",
-                gap: "2mm",
-                padding: esDatacard ? "0.6mm 1.4mm 0.4mm" : "0.8mm 1.6mm 0.6mm",
-                fontFamily: "'Barlow Condensed', sans-serif",
-                fontWeight: 700,
-                fontSize: tamAccion("2.9mm"),
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-              }}
-            >
-              <span>{a.nombre}</span>
-              <span style={{ flex: "0 0 auto" }}>{a.coste}</span>
-            </div>
-            <div style={{ padding: esDatacard ? "0.9mm 1.4mm 0.2mm" : "1.2mm 1.6mm 0.2mm" }}>
-              <LineasTexto texto={a.texto} color={COLOR_ACCION} fontSize={tamAccion("2.7mm")} lineHeight={alto("acciones")} />
-            </div>
-          </div>
+          <RecuadroAccion key={a.id} accion={a} ficha={esDatacard} tamano={tamAccion} lineHeight={alto("acciones")} estilo={marca("acciones", i)} />
         ))}
       </div>
 
@@ -512,6 +386,153 @@ export default function CartaFace({ carta, resaltar = null }) {
           {conMarcas(carta.flavor)}
         </div>
       )}
+    </div>
+  );
+}
+
+// Los cuatro cuadros de atributos de la ficha de datos (LPA, MOV, SALV, HER),
+// para la barra del título. Los usa también la hoja de control con ficha
+// adjunta (print/HojasCenitales.jsx), que tiene que pintarlos igual.
+export function AtributosFicha({ stats, marcaStat = () => null }) {
+  return [
+    { k: "LPA", clave: "apl", v: stats.apl },
+    { k: "MOV", clave: "mov", v: stats.mov },
+    { k: "SALV", clave: "salv", v: stats.salv },
+    { k: "HER", clave: "her", v: stats.her },
+  ].map((s, i) => (
+    <div
+      key={s.k}
+      style={{
+        flex: "0 0 auto",
+        width: "9.5mm",
+        background: "#14181F",
+        color: "#F5F0E4",
+        textAlign: "center",
+        padding: "0.9mm 0 0.7mm",
+        borderRadius: i === 3 ? "0 0.8mm 0.8mm 0" : 0,
+        ...marcaStat(s.clave),
+      }}
+    >
+      <div
+        style={{
+          fontFamily: "'Barlow Condensed', sans-serif",
+          fontWeight: 700,
+          fontSize: "2mm",
+          letterSpacing: "0.06em",
+          color: "#E0876B",
+        }}
+      >
+        {s.k}
+      </div>
+      <div style={{ fontWeight: 600, fontSize: "3.2mm", lineHeight: 1.1 }}>{s.v || "—"}</div>
+    </div>
+  ));
+}
+
+// La tabla de armas de la ficha de datos. También la pinta la hoja de control
+// con ficha adjunta.
+//
+// La columna de iconos solo existe si la baraja dice de qué tipo es alguna de
+// sus armas. Una baraja anterior a este campo se maqueta exactamente como
+// antes —mismas anchuras, mismo alto de fila—, en vez de reservar un hueco
+// vacío que estrecharía el nombre del arma sin dar nada a cambio.
+export function TablaArmas({ armas, color, marca = () => null }) {
+  const conIconoArma = armas.some((a) => a.tipo === "distancia" || a.tipo === "combate");
+  // La pista del icono es su ancho (1,73 mm de alto por la proporción 26:12 del
+  // viewBox = 3,75 mm) más un pelo de aire hasta el nombre. Va atada al `ALTO`
+  // de `IconoArma`: si allí cambia el tamaño, este número cambia con él.
+  const columnasArmas = conIconoArma
+    ? "3.95mm 1fr 6.5mm 7mm 8.5mm 1.3fr"
+    : "1fr 6.5mm 7mm 8.5mm 1.3fr";
+  return (
+    <div style={{ padding: "0 2.5mm 1.4mm" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: columnasArmas,
+          gap: "0 1mm",
+          fontFamily: "'Barlow Condensed', sans-serif",
+          fontWeight: 700,
+          fontSize: "2.2mm",
+          letterSpacing: "0.06em",
+          color: "#F5F0E4",
+          background: color,
+          borderRadius: "1mm 1mm 0 0",
+          padding: "0.7mm 1.4mm",
+        }}
+      >
+        {conIconoArma && <span />}
+        <span>NOMBRE</span>
+        <span style={{ textAlign: "center" }}>ATQ</span>
+        <span style={{ textAlign: "center" }}>IMP.</span>
+        <span style={{ textAlign: "center" }}>DAÑO</span>
+        <span>REGLAS DE ARMAS</span>
+      </div>
+      {armas.map((a, i) => (
+        <div
+          key={a.id || i}
+          style={{
+            display: "grid",
+            gridTemplateColumns: columnasArmas,
+            gap: "0 1mm",
+            alignItems: "center",
+            fontSize: "2.6mm",
+            padding: "0.7mm 1.4mm",
+            background: i % 2 === 0 ? "#F1F1F1" : "#FFFFFF",
+            borderLeft: `0.35mm solid ${color}`,
+            borderRight: `0.35mm solid ${color}`,
+            borderBottom: i === armas.length - 1 ? `0.35mm solid ${color}` : "none",
+            borderRadius: i === armas.length - 1 ? "0 0 1mm 1mm" : 0,
+            ...marca("armas", i),
+          }}
+        >
+          {conIconoArma && <IconoArma tipo={a.tipo} color={color} />}
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.nombre}</span>
+          <span style={{ textAlign: "center" }}>{a.atq}</span>
+          <span style={{ textAlign: "center" }}>{a.imp}</span>
+          <span style={{ textAlign: "center" }}>{a.dn}</span>
+          <span>{a.reglas || "-"}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Recuadro de una acción. `ficha` aprieta los rellenos, como en las fichas de
+// datos; `tamano` traduce los cuerpos de letra de diseño a los de la carta.
+export function RecuadroAccion({ accion, ficha, tamano = (t) => t, lineHeight, estilo }) {
+  return (
+    <div
+      style={{
+        margin: ficha ? "0.8mm 0 0.8mm" : "1mm 0 1.8mm",
+        border: `0.4mm solid ${COLOR_ACCION}`,
+        borderRadius: "1mm",
+        overflow: "hidden",
+        breakInside: "avoid",
+        ...estilo,
+      }}
+    >
+      <div
+        style={{
+          background: COLOR_ACCION,
+          color: "#F5F0E4",
+          display: "flex",
+          justifyContent: "space-between",
+          gap: "2mm",
+          padding: ficha ? "0.6mm 1.4mm 0.4mm" : "0.8mm 1.6mm 0.6mm",
+          fontFamily: "'Barlow Condensed', sans-serif",
+          fontWeight: 700,
+          fontSize: tamano("2.9mm"),
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+        }}
+      >
+        <span>{accion.nombre}</span>
+        <span style={{ flex: "0 0 auto" }}>{accion.coste}</span>
+      </div>
+      <div style={{ padding: ficha ? "0.9mm 1.4mm 0.2mm" : "1.2mm 1.6mm 0.2mm" }}>
+        <LineasTexto texto={accion.texto} color={COLOR_ACCION} fontSize={tamano("2.7mm")} lineHeight={lineHeight} />
+      </div>
     </div>
   );
 }

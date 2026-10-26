@@ -875,6 +875,7 @@ export default function VisorCartasKT() {
       {verCenitales && (
         <DialogoFichasCenitales
           cartas={cartas}
+          tokens={fichas}
           onCerrar={() => {
             setVerCenitales(false);
             setPlanchaCenitales(null);
@@ -930,7 +931,7 @@ export default function VisorCartasKT() {
       {planchaMiniaturas ? (
         <HojasMiniaturas piezas={planchaMiniaturas} nombreMazo={nombreMazo} />
       ) : planchaCenitales ? (
-        <HojasCenitales plancha={planchaCenitales} nombreMazo={nombreMazo} />
+        <HojasCenitales plancha={planchaCenitales} nombreMazo={nombreMazo} tokens={fichas} />
       ) : (
         <HojasImpresion
           cartas={seleccionadas}

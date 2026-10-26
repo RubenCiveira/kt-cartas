@@ -300,11 +300,53 @@ cargar la imagen a propósito: `window.print()` no espera a las imágenes, y un
 encuadre calculado en `onLoad` llegaría después de imprimir. `FotoEncuadrada` es
 la misma pieza en el disco y en el retrato del diálogo.
 
-Debajo de los discos va la hoja de control: una fila por agente con LPA, MOV y
-SALV, una casilla por herida —sombreadas las que lo dejan herido, por debajo de
-la mitad—, orden, activado e incapacitado. **Todo en un solo flujo, sin saltos de
-página forzados**: una escuadra corta sale en un folio. El navegador corta donde
-haga falta y `break-inside: avoid` impide partir un disco o una fila; la cabecera
+**Qué partes salen lo decide el diálogo**, con tres casillas y un desplegable
+que viajan en la plancha (`agentes`, `tokens`, `control`, `estiloControl`):
+
+- **Hoja de control de escuadra**, marcada por defecto.
+- **Tokens de escuadra**: las piezas del bloque `fichas` de la baraja (las de
+  `HojaFichas`, con `PiezaFicha` y `copiasDeFichas`), encogidas por el `factor`
+  de la escala: al 100 % en 28 mm y al de las láminas en 15 mm. El margen de
+  corte (`SANGRE_MM`) no se encoge. Solo se ofrece si la baraja trae `fichas`.
+- **Solo la hoja de control**: deja fuera discos y tokens sin desmarcar las
+  otras casillas, que vuelven como estaban al quitarla. Los agentes se siguen
+  eligiendo: son las filas de la hoja.
+
+La hoja de control tiene cuatro estilos (`ESTILOS_CONTROL`):
+
+- **Para escribir** (`ControlEscuadra`): una fila por agente con LPA, MOV y
+  SALV, una casilla por herida —sombreadas las que lo dejan herido, por debajo
+  de la mitad—, orden, activado e incapacitado.
+- **Tablero** (`ControlTablero`): el disco del agente como icono de VTT dentro
+  de un **anillo de huecos con forma de segmento**, porque los tokens de estado
+  de Kill Team no son redondos: son segmentos de corona (`SEGMENTO` en
+  `HojaFichas.jsx`) hechos para rodear una peana, y el lado estrecho va hacia el
+  icono. `geometriaAnillo()` saca todo del tamaño del token (`fichas.mm`, o 20
+  mm si la baraja no trae, por el `factor`): los lados de la silueta convergen a
+  0,99 veces ese tamaño, que es el radio natural donde empieza el anillo (o más
+  afuera si el icono bajaría de 20 mm), con 0,82 de fondo y 0,84 de ancho por
+  fuera, más holgura. El icono llena lo que queda dentro. Debajo, nombre,
+  características y heridas. Orden y estado no llevan casillas: son los tokens.
+- **Icono, anillo y ficha** (`tarjeta`, `LineaConFicha`): un agente por línea, en **un recuadro**
+  del color de su arquetipo que envuelve el anillo, las heridas y sus datos.
+  **No es la carta pegada**: la barra del título no lleva foto (ya está en el
+  icono) sino el nombre del agente, con el operativo de subtítulo; y las armas y
+  habilidades de todas sus cartas —la `datacard` y su continuación, las que
+  reúne `operativosDe()` en `datos`— van en **una sola tabla y un solo cuerpo a
+  dos columnas**, sin recuadro interno ni alto fijo: un operativo con muchas
+  reglas alarga su línea en vez de salir en dos fichas. Los cuadros de
+  atributos, la tabla de armas y el recuadro de acción son los de `CartaFace`
+  (`AtributosFicha`, `TablaArmas`, `RecuadroAccion`, exportados de allí), así
+  que se leen igual que en la carta; si cambian en la carta, cambian aquí.
+
+- **Cartas de póquer para pinzas** (`carta`, `TarjetasControl`): el formato de
+  la prueba B descrito debajo, elegido como hoja de control desde el desplegable.
+
+**Todo en un solo flujo, sin saltos de página forzados**: discos, tokens y hoja,
+en ese orden y faltando los que no se pidan; una escuadra corta sale en un
+folio. El aire entre partes va entre hermanos (`.hoja-cenitales > * + *`) porque
+cualquiera puede ser la primera. El navegador corta donde haga falta y
+`break-inside: avoid` impide partir un disco, una fila o un anillo; la cabecera
 de la tabla se repite en cada página.
 
 **Bandas de ANJ.** Las fichas genéricas de JcE (Tropa, Recio, Pesado…) no son
@@ -319,6 +361,30 @@ Como las miniaturas, `App.jsx` monta esta plancha **en lugar** de las hojas de
 cartas mientras haya una resuelta (`planchaCenitales`), y el diálogo la
 resuelve con `flushSync` antes de `window.print()`. No se apunta en el registro
 de impresiones: no son cartas.
+
+### Pruebas de control en mesa
+
+`print/TarjetasControl.jsx` contiene dos formatos de prueba para llevar el
+estado de cada agente sin fichas sueltas encima de la tarjeta grande. El
+diálogo ofrece el B mediante el estilo `carta`; el A queda en el componente,
+sin selector en el diálogo. Todo en mm reales: son piezas de jugador y no
+escalan con 15/28 mm.
+
+- **A · carta de 80 × 120 mm y portacartas troquelado.** La carta lleva una
+  rejilla de heridas (casillas de 6 mm, hasta 11 por fila) y cuatro pozos de
+  14 mm (orden, activado y dos de facción); el texto ocupa el resto. El
+  portacartas son tres capas para pegar en cartón: marco con ventanas encima de
+  esos huecos, separador en U (la ranura de la carta) y base. Carta y marco
+  comparten las constantes `A_*`: si se mueve un hueco en una, se mueve en la
+  otra. Las fichas de facción de los pozos son `PiezaFicha` a 13,2 mm, con su
+  silueta.
+- **B · carta de póquer (63 × 88 mm)** con la pista de heridas en el borde
+  derecho, para una pinza, y fichas rectangulares de 11 × 18 mm en tiras que se
+  doblan sobre una pinza pequeña: Combatir/Ocultarse y Listo/Activado, una cara
+  por estado; las de facción, con su imagen por los dos lados.
+
+Armas, reglas y acciones salen de `datos` (todas las cartas del agente juntas) y
+se cortan si no caben: son pruebas de formato, no sustitutos de la ficha.
 
 ## Mazos de impresión
 

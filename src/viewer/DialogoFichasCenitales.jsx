@@ -18,9 +18,17 @@
 // `familiaFotos`, una foto por familia (tiránidos, orkos…). Si alguna la trae,
 // el diálogo ofrece un desplegable de familia, y los operativos que la tengan
 // salen con esa foto; los que no, con la suya.
+//
+// Qué se imprime también se decide aquí: los discos, los tokens de escuadra (el
+// bloque `fichas` de la baraja, a la escala elegida; solo si la baraja lo trae),
+// la hoja de control y su estilo. «Solo la hoja de control» deja fuera discos y
+// tokens, para reimprimir la hoja de otra partida sin gastar tinta en recortables
+// que ya tienes; los agentes se siguen eligiendo, porque son sus filas. El
+// estilo tarjeta adjunta la ficha de datos de cada agente al lado de su anillo;
+// el estilo carta imprime cartas de póquer con fichas para pinza.
 
 import { useMemo, useState } from "react";
-import { FotoEncuadrada, TAMANOS_CENITALES } from "../print/HojasCenitales.jsx";
+import { ESTILOS_CONTROL, FotoEncuadrada, TAMANOS_CENITALES } from "../print/HojasCenitales.jsx";
 
 // Un operativo por título: la ficha de datos que sigue en el reverso repite
 // título y no es otro operativo.
@@ -33,17 +41,24 @@ export function operativosDe(cartas) {
       porTitulo.set(c.titulo, {
         titulo: c.titulo, foto: c.foto, fotoCentro: c.fotoCentro, stats: c.stats,
         maximo: c.cantidadMaximo, sugeridos: c.nombresSugeridos, familias: c.familiaFotos || {},
+        datos: [],
       });
     } else if (!previo.foto && c.foto) {
       Object.assign(previo, { foto: c.foto, fotoCentro: c.fotoCentro });
     }
+  }
+  // Las cartas de cada operativo, para adjuntarlas a la hoja de control: sus
+  // fichas de datos y la de continuación, si la tiene, en el orden del mazo.
+  for (const c of cartas) {
+    const op = porTitulo.get(c.titulo);
+    if (op && (c.tipo === "datacard" || c.continuacion)) op.datos.push(c);
   }
   return [...porTitulo.values()];
 }
 
 const MAX_POR_OPERATIVO = 30; // solo para que un dedazo no genere cien discos
 
-export default function DialogoFichasCenitales({ cartas, onCerrar, onImprimir }) {
+export default function DialogoFichasCenitales({ cartas, tokens, onCerrar, onImprimir }) {
   const operativosBase = useMemo(() => operativosDe(cartas), [cartas]);
   const familias = useMemo(
     () => [...new Set(operativosBase.flatMap((op) => Object.keys(op.familias)))],
@@ -62,6 +77,20 @@ export default function DialogoFichasCenitales({ cartas, onCerrar, onImprimir })
   const [tamano, setTamano] = useState("28mm");
   const [cuantos, setCuantos] = useState({});
   const [nombres, setNombres] = useState({});
+  const [incluirControl, setIncluirControl] = useState(true);
+  const [incluirTokens, setIncluirTokens] = useState(false);
+  const [soloControl, setSoloControl] = useState(false);
+  const [estiloControl, setEstiloControl] = useState("escribir");
+  const hayTokens = !!(tokens && tokens.lista && tokens.lista.length);
+  const piezasTokens = hayTokens ? tokens.lista.reduce((n, f) => n + (f.cantidad || 1), 0) : 0;
+
+  // «Solo la hoja de control» manda sobre las otras dos casillas sin pisar lo
+  // que tenían: al desmarcarla vuelven como estaban.
+  const partes = {
+    agentes: !soloControl,
+    tokens: !soloControl && hayTokens && incluirTokens,
+    control: soloControl || incluirControl,
+  };
 
   const cuantosDe = (op) => cuantos[op.titulo] || 0;
   const cambiar = (op, n) => setCuantos((c) => ({ ...c, [op.titulo]: Math.max(0, Math.min(MAX_POR_OPERATIVO, n)) }));
@@ -91,7 +120,10 @@ export default function DialogoFichasCenitales({ cartas, onCerrar, onImprimir })
         usados.add(nombre);
       }
       porDefecto[op.titulo].push(nombre);
-      fichas.push({ clave: op.titulo + "-" + i, titulo: op.titulo, foto: op.foto, fotoCentro: op.fotoCentro, stats: op.stats, nombre });
+      fichas.push({
+        clave: op.titulo + "-" + i, titulo: op.titulo, foto: op.foto, fotoCentro: op.fotoCentro,
+        stats: op.stats, datos: op.datos, nombre,
+      });
     }
   }
 
@@ -105,8 +137,8 @@ export default function DialogoFichasCenitales({ cartas, onCerrar, onImprimir })
 
         <p className="parrafo">
           Un disco por agente, del tamaño de su peana, con la foto de su ficha y su nombre, para
-          jugar sobre la escenografía de papel. Detrás sale una hoja de control de escuadra con los
-          mismos nombres.
+          jugar sobre la escenografía de papel. Detrás pueden salir los tokens de escuadra a la
+          misma escala y una hoja de control de escuadra con los mismos nombres.
         </p>
         <div className="modal-opciones">
           <div>
@@ -126,7 +158,41 @@ export default function DialogoFichasCenitales({ cartas, onCerrar, onImprimir })
               </select>
             </div>
           )}
+          <div>
+            <label>Hoja de control</label>
+            <select value={estiloControl} onChange={(e) => setEstiloControl(e.target.value)} disabled={!partes.control}>
+              {Object.entries(ESTILOS_CONTROL).map(([id, etiqueta]) => (
+                <option key={id} value={id}>{etiqueta}</option>
+              ))}
+            </select>
+          </div>
         </div>
+
+        <label className="check-linea" style={{ marginTop: 12 }}>
+          <input
+            type="checkbox"
+            checked={partes.control}
+            disabled={soloControl}
+            onChange={(e) => setIncluirControl(e.target.checked)}
+          />
+          Imprimir la hoja de control de escuadra
+        </label>
+        {hayTokens && (
+          <label className="check-linea">
+            <input
+              type="checkbox"
+              checked={partes.tokens}
+              disabled={soloControl}
+              onChange={(e) => setIncluirTokens(e.target.checked)}
+            />
+            Imprimir los tokens de escuadra ({piezasTokens} piezas,{" "}
+            {TAMANOS_CENITALES[tamano].factor === 1 ? "al 100 %" : "a escala de 15 mm"})
+          </label>
+        )}
+        <label className="check-linea">
+          <input type="checkbox" checked={soloControl} onChange={(e) => setSoloControl(e.target.checked)} />
+          Imprimir solo la hoja de control (sin discos ni tokens)
+        </label>
 
         <div className="modal-cabecera" style={{ margin: "16px 0 8px" }}>
           <label style={{ margin: 0 }}>Agentes</label>
@@ -177,10 +243,20 @@ export default function DialogoFichasCenitales({ cartas, onCerrar, onImprimir })
 
         <div className="modal-pie">
           <div className="resumen">
-            <b className="acento">{fichas.length}</b> ficha(s) + hoja de control
+            {[
+              partes.agentes && <span key="a"><b className="acento">{fichas.length}</b> ficha(s)</span>,
+              partes.tokens && <span key="t">{piezasTokens} token(s)</span>,
+              partes.control && <span key="c">hoja de control</span>,
+            ]
+              .filter(Boolean)
+              .flatMap((p, i) => (i ? [" + ", p] : [p]))}
           </div>
-          <button className="btn btn-primario" onClick={() => onImprimir({ tamano, fichas })} disabled={!fichas.length}>
-            Imprimir fichas
+          <button
+            className="btn btn-primario"
+            onClick={() => onImprimir({ tamano, fichas, estiloControl, ...partes })}
+            disabled={!fichas.length}
+          >
+            {soloControl ? "Imprimir hoja de control" : "Imprimir fichas"}
           </button>
         </div>
       </div>

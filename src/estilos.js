@@ -770,15 +770,21 @@ label {
 /* Banner curvo del nombre (BannerCurvo en HojasCenitales.jsx): la franja y el
    texto los dibuja el SVG; aquí solo se le da la tipografía. */
 .ficha-cenital-arco { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* El mismo disco como icono de la hoja de control «tablero»: no se recorta, así
+   que sin línea de corte, y con el canto grueso de un token de VTT. */
+.ficha-cenital.ficha-cenital-icono { outline: none; border-width: 1mm; }
 .ficha-cenital-arco text {
   font-family: 'Barlow Condensed', sans-serif; font-weight: 700; fill: #FFF;
   text-transform: uppercase; letter-spacing: 0.04em;
 }
 
-/* Hoja de control de escuadra: una fila por agente. */
-/* Va justo detrás de los discos, sin salto forzado: un folio si cabe. La
-   cabecera no se queda sola al pie de una página, y ninguna fila se parte. */
-.control-escuadra { font-family: 'Barlow Condensed', sans-serif; color: #1A1A1A; margin-top: 8mm; }
+/* Discos, tokens y hoja de control van uno tras otro, sin salto forzado: un
+   folio si cabe. Cualquiera puede faltar, así que el aire va entre hermanos. */
+.hoja-cenitales > * + * { margin-top: 8mm; }
+
+/* Hoja de control de escuadra: una fila por agente. La cabecera no se queda
+   sola al pie de una página, y ninguna fila se parte. */
+.control-escuadra { font-family: 'Barlow Condensed', sans-serif; color: #1A1A1A; }
 .control-cabecera, .control-tabla thead { break-after: avoid; break-inside: avoid; }
 .control-tabla tr { break-inside: avoid; }
 .control-cabecera {
@@ -816,6 +822,43 @@ label {
 .control-estado .control-casilla { margin-left: 0; }
 .control-notas { width: 30%; }
 
+/* Hoja de control «tablero» (ControlTablero): el anillo lo dibuja el SVG a su
+   tamaño en mm, y el icono va encima, centrado. En rejilla, los datos van
+   debajo del anillo; con la ficha adjunta, un agente por línea y la carta al
+   lado. */
+.tablero-rejilla { display: flex; flex-wrap: wrap; gap: 4mm; justify-content: center; }
+.tablero-agente { display: flex; flex-direction: column; align-items: center; gap: 1.6mm; break-inside: avoid; }
+.tablero-lineas { display: flex; flex-direction: column; gap: 4mm; }
+/* Con ficha (LineaConFicha): el recuadro envuelve anillo, heridas y datos; el
+   color del borde llega en línea, del arquetipo. La barra del título imita la
+   de la ficha de datos de CartaFace, con el nombre y el operativo debajo. */
+.tablero-linea {
+  display: flex; align-items: flex-start; break-inside: avoid;
+  border: 0.6mm solid; border-radius: 2.5mm; padding: 2mm;
+  font-family: 'Barlow', sans-serif; color: #1B1F26;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+.tablero-ficha { flex: 1; min-width: 0; }
+.tablero-ficha-cabecera { display: flex; align-items: stretch; gap: 0.8mm; padding: 0 0 1.4mm; }
+.tablero-ficha-titulo {
+  flex: 1; min-width: 0; background: #14181F; color: #F5F0E4; border-radius: 0.8mm 0 0 0.8mm;
+  padding: 0.9mm 2mm 0.7mm; display: flex; flex-direction: column; justify-content: center;
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 700; text-transform: uppercase;
+}
+.tablero-ficha-nombre { font-size: 3.8mm; letter-spacing: 0.05em; line-height: 1.05; }
+.tablero-ficha-operativo { font-size: 2.4mm; letter-spacing: 0.06em; line-height: 1.1; color: #E0876B; }
+.tablero-ficha .tablero-ficha-cuerpo { column-count: 2; column-gap: 3mm; padding: 0 2.5mm; }
+.tablero-anillo {
+  position: relative; flex: none;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+.tablero-anillo svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.tablero-anillo .ficha-cenital { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+.tablero-datos { width: 100%; display: flex; flex-direction: column; gap: 1.2mm; text-align: center; }
+.tablero-datos .control-heridas, .tablero-agente > .control-heridas { justify-content: center; max-width: none; }
+.tablero-stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4mm 2mm; font-size: 2.8mm; text-transform: uppercase; }
+.tablero-stats b { font-size: 3.4mm; }
+
 /* Diálogo de fichas cenitales */
 .cenital-fila {
   border: 1px solid transparent; border-radius: 6px; padding: 4px 6px; margin-bottom: 2px; opacity: 0.75;
@@ -835,6 +878,82 @@ label {
   margin: 6px 0 2px 40px;
 }
 .cenital-nombres input { width: 100%; box-sizing: border-box; font-size: 13px; }
+
+/* ---------- Pruebas de control en mesa (print/TarjetasControl.jsx) ---------- */
+/* Todo en mm reales: son piezas de jugador, no escalan con 15/28 mm. Las piezas
+   no se parten entre páginas. Sin comillas invertidas en estos comentarios: el
+   CSS vive dentro de una plantilla de texto. */
+.ctl-seccion { margin-top: 6mm; font-family: 'Barlow Condensed', sans-serif; color: #1A1A1A; }
+.ctl-seccion h3 {
+  font-size: 4.2mm; margin: 0 0 1mm; text-transform: uppercase; letter-spacing: 0.04em;
+  border-bottom: 0.5mm solid #E8642C; padding-bottom: 0.6mm; break-after: avoid;
+}
+.ctl-seccion .pie-fichas { text-align: left; margin: 0 0 2.5mm; max-width: none; }
+.ctl-rejilla { display: flex; flex-wrap: wrap; gap: 3mm; align-items: flex-start; margin-bottom: 4mm; }
+.ctl-grupo { display: flex; flex-wrap: wrap; gap: 3mm; break-inside: avoid; }
+.ctl-pieza { break-inside: avoid; flex: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.ctl-capa-rotulo { font-family: 'Barlow Condensed', sans-serif; font-size: 2.4px; font-weight: 700; text-anchor: middle; }
+
+.ctl-carta-a, .ctl-carta-b {
+  position: relative; box-sizing: border-box; background: #FFF; overflow: hidden;
+  border: 0.3mm solid #1A1A1A; border-radius: 2mm; outline: 0.2mm dashed #999; outline-offset: 0.8mm;
+}
+.ctl-zona-texto { position: absolute; overflow: hidden; display: flex; flex-direction: column; gap: 1mm; }
+.ctl-cabecera { display: flex; gap: 1.6mm; align-items: center; border-bottom: 0.4mm solid #E8642C; padding-bottom: 1mm; }
+.ctl-retrato { flex: none; border-radius: 50%; overflow: hidden; border: 0.35mm solid #1A1A1A; background: #D9D3C7; }
+.ctl-retrato img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ctl-titulos { min-width: 0; flex: 1; }
+.ctl-nombre { font-size: 3.6mm; font-weight: 700; text-transform: uppercase; line-height: 1; }
+.ctl-tipo { font-size: 1.9mm; color: #666; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ctl-stats { display: flex; gap: 2mm; font-size: 2.1mm; margin-top: 0.5mm; }
+.ctl-stats b { font-size: 2.6mm; }
+.ctl-reglas { font-family: 'Barlow', sans-serif; font-size: 1.9mm; line-height: 1.2; }
+.ctl-armas { width: 100%; border-collapse: collapse; font-size: 1.8mm; margin-bottom: 0.8mm; }
+.ctl-armas th { text-align: left; font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase;
+  border-bottom: 0.25mm solid #1A1A1A; padding: 0 0.6mm; }
+.ctl-armas td { border-bottom: 0.15mm solid #DDD; padding: 0.2mm 0.6mm; vertical-align: top; }
+.ctl-armas td:first-child { font-weight: 700; }
+.ctl-accion { border-left: 0.6mm solid #E8642C; padding-left: 1mm; margin-top: 0.8mm; }
+.ctl-accion b { font-family: 'Barlow Condensed', sans-serif; font-size: 2.1mm; text-transform: uppercase; }
+
+.ctl-herida {
+  position: absolute; box-sizing: border-box; border: 0.3mm solid #1A1A1A; border-radius: 0.6mm;
+  font-size: 2.2mm; display: flex; align-items: center; justify-content: center; color: #888;
+}
+.ctl-herida.herido { background: #DDD; }
+.ctl-pozo {
+  position: absolute; box-sizing: border-box; border-radius: 50%; border: 0.3mm dashed #888; background: #F2EFE9;
+  font-size: 1.8mm; font-weight: 700; color: #999; display: flex; align-items: center; justify-content: center;
+}
+.ctl-ficha-pozo {
+  border-radius: 50%; box-sizing: border-box; border: 0.4mm solid #1A1A1A; background: #FFF;
+  outline: 0.2mm dashed #999; outline-offset: 0.6mm;
+  font-size: 1.7mm; font-weight: 700; display: flex; align-items: center; justify-content: center; text-align: center;
+}
+.ctl-ficha-pozo.oscura { background: #24282d; color: #F5F1E8; }
+.ctl-marcador-vida {
+  width: 4.6mm; height: 4.6mm; border-radius: 50%; background: #E8642C; border: 0.3mm solid #1A1A1A;
+  outline: 0.2mm dashed #999; outline-offset: 0.5mm;
+}
+
+.ctl-pista { position: absolute; top: 3mm; right: 0; display: flex; flex-direction: column; }
+.ctl-pista-casilla {
+  display: flex; align-items: center; justify-content: center; font-size: 2mm; font-weight: 700;
+  border-top: 0.2mm solid #BBB; border-left: 0.3mm solid #1A1A1A; background: #F2EFE9;
+}
+.ctl-pista-casilla.herido { background: #D6D0C4; }
+.ctl-tira {
+  display: flex; flex-direction: column; box-sizing: border-box; border: 0.3mm solid #1A1A1A;
+  outline: 0.2mm dashed #999; outline-offset: 0.6mm;
+}
+.ctl-tira-cara {
+  flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden;
+  writing-mode: vertical-rl; font-size: 2.4mm; font-weight: 700; letter-spacing: 0.06em; background: #FFF;
+}
+.ctl-tira-cara + .ctl-tira-cara { border-top: 0.25mm dotted #1A1A1A; }
+.ctl-tira-cara.dorso { transform: rotate(180deg); background: #24282d; color: #F5F1E8; }
+.ctl-tira-cara.imagen { writing-mode: horizontal-tb; background: #FFF; color: #1A1A1A; }
+.ctl-tira-cara img { width: 92%; height: 92%; object-fit: contain; }
 
 /* ---------- Hoja de miniaturas de papel ---------- */
 /* Misma plancha que las fichas (etiqueta, rejilla, pie), pieza aparte porque el

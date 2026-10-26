@@ -16,16 +16,20 @@
 
 import { useAssetUrl } from "../assets.js";
 
-const SANGRE_MM = 1.2; // margen alrededor del dibujo, para el corte
+export const SANGRE_MM = 1.2; // margen alrededor del dibujo, para el corte
+
+// Una entrada por copia: la hoja es lo que vas a recortar, no un inventario.
+// También la usan los tokens de escuadra de print/HojasCenitales.jsx.
+export function copiasDeFichas(fichas) {
+  return fichas.lista.flatMap((f, fi) =>
+    Array.from({ length: f.cantidad || 1 }, (_, i) => ({ ...f, clave: fi + "-" + i }))
+  );
+}
 
 export default function HojaFichas({ fichas, nombreMazo }) {
   if (!fichas || !fichas.lista || !fichas.lista.length) return null;
   const porDefecto = fichas.mm || 20;
-
-  // Una entrada por copia: la hoja es lo que vas a recortar, no un inventario
-  const copias = fichas.lista.flatMap((f, fi) =>
-    Array.from({ length: f.cantidad || 1 }, (_, i) => ({ ...f, clave: fi + "-" + i }))
-  );
+  const copias = copiasDeFichas(fichas);
 
   return (
     <div className="hoja hoja-fichas">
