@@ -5,9 +5,9 @@ import { useIconoBarajaUrl } from "../assets.js";
 import { agruparBandas, normalizarBanda } from "../data/bandas.js";
 import HojasCenitales from "../print/HojasCenitales.jsx";
 import DialogoFichasCenitales from "./DialogoFichasCenitales.jsx";
-import MenuUsuario from "./MenuUsuario.jsx";
+import CabeceraPrincipal from "./CabeceraPrincipal.jsx";
 
-export default function MisEquipos({ usuario, barajas, onInicio, avatarUrl, onLogout }) {
+export default function MisEquipos({ usuario, barajas, onInicio, onMazosImpresion, mazosImpresion, avatarUrl, onLogout }) {
   const [intento, setIntento] = useState(0);
   const [resultado, setResultado] = useState({ estado: "cargando", bandas: [], error: "" });
   const [bandaAbierta, setBandaAbierta] = useState(null);
@@ -23,7 +23,7 @@ export default function MisEquipos({ usuario, barajas, onInicio, avatarUrl, onLo
         if (!cancelado) setResultado({ estado: "listo", bandas: rows.map(normalizarBanda), error: "" });
       })
       .catch((e) => {
-        if (!cancelado) setResultado({ estado: "error", bandas: [], error: e.message || "No se pudieron cargar tus equipos." });
+        if (!cancelado) setResultado({ estado: "error", bandas: [], error: e.message || "No se pudieron cargar tus bandas." });
       });
     return () => { cancelado = true; };
   }, [userId, intento]);
@@ -31,17 +31,17 @@ export default function MisEquipos({ usuario, barajas, onInicio, avatarUrl, onLo
   return (
     <>
       <div className="portada">
-        <header className="barra portada-barra">
-          <div className="barra-fila">
-            <button className="btn btn-mini" onClick={onInicio}>Inicio</button>
-            <h1 className="portada-marca">Mis equipos</h1>
-            <div style={{ marginLeft: "auto" }}>
-              <MenuUsuario usuario={usuario} avatarUrl={avatarUrl} onLogout={onLogout} />
-            </div>
-          </div>
-        </header>
+        <CabeceraPrincipal
+          seccion="operadores"
+          onBarajas={onInicio}
+          onMazosImpresion={onMazosImpresion}
+          mazosImpresion={mazosImpresion}
+          usuario={usuario}
+          avatarUrl={avatarUrl}
+          onLogout={onLogout}
+        />
         <div className="portada-cuerpo">
-          {resultado.estado === "cargando" && <p className="parrafo" role="status">Cargando tus equipos…</p>}
+          {resultado.estado === "cargando" && <p className="parrafo" role="status">Cargando tus bandas…</p>}
           {resultado.estado === "error" && (
             <>
               <p className="aviso-filtro" role="alert">{resultado.error}</p>
@@ -49,7 +49,7 @@ export default function MisEquipos({ usuario, barajas, onInicio, avatarUrl, onLo
             </>
           )}
           {resultado.estado === "listo" && !resultado.bandas.length && (
-            <p className="parrafo">Todavía no tienes equipos guardados. Selecciona operativos en «Fichas cenitales» y pulsa «Guardar como banda».</p>
+            <p className="parrafo">Todavía no tienes bandas guardadas. Selecciona operativos en «Fichas cenitales» y pulsa «Guardar como banda».</p>
           )}
           {agruparBandas(resultado.bandas, barajas).map((grupo) => (
             <section className="portada-grupo" key={grupo.faccion}>

@@ -610,6 +610,8 @@ export default function VisorCartasKT() {
           avatarUrl={userAvatarUrl(usuario)}
           onLogout={cerrarSesion}
           onInicio={() => setVerEquipos(false)}
+          onMazosImpresion={() => { setVerEquipos(false); abrirMazos(); }}
+          mazosImpresion={mazosImpresion.mazos.length}
         />
       </>
     );

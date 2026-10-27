@@ -406,7 +406,9 @@ para ANJ y `operadores`: un array de cadenas JSON con `id` propio de cada copia,
 reglas ni imágenes. El `$id` de la banda y los IDs de sus miembros permiten
 asociar partidas y cambios en futuras tablas, que deberán repetir los permisos
 privados en cada fila: un `bandaId` por sí solo no concede ni restringe acceso.
-«Mis equipos», junto a «Mazos de impresión» en la barra de la portada, abre
+La navegación principal tiene dos secciones, «Barajas» y «Mis operadores»,
+con una cabecera común en `viewer/CabeceraPrincipal.jsx`. «Mazos de impresión»
+queda como acción de la cabecera en ambas. «Mis operadores» abre
 la sección `viewer/MisEquipos.jsx` (`#equipos=1`), con las tarjetas de la portada
 agrupadas por la clave `faccion` guardada y el icono de su baraja. Consulta las
 bandas al entrar y contempla carga, lista vacía, error y reintento.
