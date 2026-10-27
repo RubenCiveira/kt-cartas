@@ -28,7 +28,10 @@
 // el estilo carta imprime cartas de póquer con fichas para pinza.
 
 import { useMemo, useState } from "react";
+import { ID } from "appwrite";
+import { MAX_NOMBRE_OPERADOR, seleccionDeBanda } from "../data/bandas.js";
 import { ESTILOS_CONTROL, FotoEncuadrada, TAMANOS_CENITALES } from "../print/HojasCenitales.jsx";
+import DialogoGuardarBanda from "./DialogoGuardarBanda.jsx";
 
 // Un operativo por título: la ficha de datos que sigue en el reverso repite
 // título y no es otro operativo.
@@ -39,7 +42,7 @@ export function operativosDe(cartas) {
     const previo = porTitulo.get(c.titulo);
     if (!previo) {
       porTitulo.set(c.titulo, {
-        titulo: c.titulo, foto: c.foto, fotoCentro: c.fotoCentro, stats: c.stats,
+        cartaId: c.id, titulo: c.titulo, foto: c.foto, fotoCentro: c.fotoCentro, stats: c.stats,
         maximo: c.cantidadMaximo, sugeridos: c.nombresSugeridos, familias: c.familiaFotos || {},
         datos: [],
       });
@@ -58,13 +61,19 @@ export function operativosDe(cartas) {
 
 const MAX_POR_OPERATIVO = 30; // solo para que un dedazo no genere cien discos
 
-export default function DialogoFichasCenitales({ cartas, tokens, onCerrar, onImprimir }) {
+export default function DialogoFichasCenitales({ cartas, tokens, banda, onCerrar, onImprimir, onGuardarBanda }) {
+  const [bandaAGuardar, setBandaAGuardar] = useState(null);
+  const [bandaGuardada, setBandaGuardada] = useState("");
   const operativosBase = useMemo(() => operativosDe(cartas), [cartas]);
+  const seleccionInicial = useMemo(() => seleccionDeBanda(banda, operativosBase), [banda, operativosBase]);
+  const [ids, setIds] = useState(seleccionInicial.ids);
+  const [guardando, setGuardando] = useState(false);
+  const [errorGuardado, setErrorGuardado] = useState("");
   const familias = useMemo(
     () => [...new Set(operativosBase.flatMap((op) => Object.keys(op.familias)))],
     [operativosBase]
   );
-  const [familia, setFamilia] = useState(() => familias[0] || "");
+  const [familia, setFamilia] = useState(() => banda ? banda.familia : familias[0] || "");
   // Con familia elegida, la foto de cada operativo es la de esa familia si la
   // tiene; el resto del diálogo no distingue.
   const operativos = useMemo(
@@ -75,8 +84,8 @@ export default function DialogoFichasCenitales({ cartas, tokens, onCerrar, onImp
     [operativosBase, familia]
   );
   const [tamano, setTamano] = useState("28mm");
-  const [cuantos, setCuantos] = useState({});
-  const [nombres, setNombres] = useState({});
+  const [cuantos, setCuantos] = useState(seleccionInicial.cuantos);
+  const [nombres, setNombres] = useState(seleccionInicial.nombres);
   const [incluirControl, setIncluirControl] = useState(true);
   const [incluirTokens, setIncluirTokens] = useState(false);
   const [soloControl, setSoloControl] = useState(false);
@@ -93,7 +102,11 @@ export default function DialogoFichasCenitales({ cartas, tokens, onCerrar, onImp
   };
 
   const cuantosDe = (op) => cuantos[op.titulo] || 0;
-  const cambiar = (op, n) => setCuantos((c) => ({ ...c, [op.titulo]: Math.max(0, Math.min(MAX_POR_OPERATIVO, n)) }));
+  const cambiar = (op, n) => {
+    const cantidad = Math.max(0, Math.min(MAX_POR_OPERATIVO, n));
+    setCuantos((c) => ({ ...c, [op.titulo]: cantidad }));
+    setIds((previos) => ({ ...previos, [op.titulo]: Array.from({ length: cantidad }, (_, i) => previos[op.titulo]?.[i] || ID.unique()) }));
+  };
   const nombrar = (op, i, valor) =>
     setNombres((ns) => {
       const lista = [...(ns[op.titulo] || [])];
@@ -121,17 +134,32 @@ export default function DialogoFichasCenitales({ cartas, tokens, onCerrar, onImp
       }
       porDefecto[op.titulo].push(nombre);
       fichas.push({
-        clave: op.titulo + "-" + i, titulo: op.titulo, foto: op.foto, fotoCentro: op.fotoCentro,
+        id: ids[op.titulo]?.[i],
+        clave: op.titulo + "-" + i, cartaId: op.cartaId, titulo: op.titulo, foto: op.foto, fotoCentro: op.fotoCentro,
         stats: op.stats, datos: op.datos, nombre,
       });
     }
   }
 
+  async function guardarCambios() {
+    setGuardando(true);
+    setErrorGuardado("");
+    try {
+      await onGuardarBanda({ nombre: banda.nombre, familia, operadores: fichas.map(({ id, cartaId, titulo, nombre }) => ({ id, cartaId, titulo, nombre })) });
+      setBandaGuardada(banda.nombre);
+    } catch (e) {
+      setErrorGuardado(e.message || "No se pudieron guardar los cambios.");
+    } finally {
+      setGuardando(false);
+    }
+  }
+
   return (
+    <>
     <div className="modal-fondo" onClick={onCerrar}>
       <div className="modal ancho" onClick={(e) => e.stopPropagation()}>
         <div className="modal-cabecera">
-          <h2>Fichas cenitales</h2>
+          <h2>{banda ? banda.nombre : "Fichas cenitales"}</h2>
           <button className="btn btn-mini" onClick={onCerrar}>Cerrar</button>
         </div>
 
@@ -228,6 +256,7 @@ export default function DialogoFichasCenitales({ cartas, tokens, onCerrar, onImp
                       <input
                         key={i}
                         type="text"
+                        maxLength={MAX_NOMBRE_OPERADOR}
                         list={op.sugeridos.length ? lista : undefined}
                         value={nombres[op.titulo]?.[i] || ""}
                         placeholder={porDefecto[op.titulo][i]}
@@ -241,6 +270,11 @@ export default function DialogoFichasCenitales({ cartas, tokens, onCerrar, onImp
           })}
         </div>
 
+        {seleccionInicial.faltantes.length > 0 && (
+          <p className="aviso-filtro" role="alert">Hay operativos que ya no están en la baraja: {seleccionInicial.faltantes.map((op) => op.nombre).join(", ")}. No se puede sobrescribir la banda mientras falten sus datos.</p>
+        )}
+        {errorGuardado && <p className="aviso-filtro" role="alert">{errorGuardado}</p>}
+        {bandaGuardada && <p className="parrafo" role="status">Banda «{bandaGuardada}» guardada.</p>}
         <div className="modal-pie">
           <div className="resumen">
             {[
@@ -251,6 +285,15 @@ export default function DialogoFichasCenitales({ cartas, tokens, onCerrar, onImp
               .filter(Boolean)
               .flatMap((p, i) => (i ? [" + ", p] : [p]))}
           </div>
+          {onGuardarBanda && (
+            <button
+              className="btn"
+              disabled={!fichas.length || guardando || seleccionInicial.faltantes.length > 0}
+              onClick={banda ? guardarCambios : () => setBandaAGuardar({ operadores: fichas.map(({ id, cartaId, titulo, nombre }) => ({ id, cartaId, titulo, nombre })), familia })}
+            >
+              {guardando ? "Guardando…" : banda ? "Guardar cambios" : "Guardar como banda"}
+            </button>
+          )}
           <button
             className="btn btn-primario"
             onClick={() => onImprimir({ tamano, fichas, estiloControl, ...partes })}
@@ -261,5 +304,17 @@ export default function DialogoFichasCenitales({ cartas, tokens, onCerrar, onImp
         </div>
       </div>
     </div>
+    {bandaAGuardar && (
+      <DialogoGuardarBanda
+        cuantos={bandaAGuardar.operadores.length}
+        onCerrar={() => setBandaAGuardar(null)}
+        onGuardar={async (nombre) => {
+          await onGuardarBanda({ nombre, ...bandaAGuardar });
+          setBandaGuardada(nombre);
+          setBandaAGuardar(null);
+        }}
+      />
+    )}
+    </>
   );
 }

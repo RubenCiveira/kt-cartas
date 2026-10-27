@@ -35,6 +35,7 @@ export function leerHash() {
     // "1" es la lista de mazos; cualquier otra cosa, el id de uno concreto. El
     // id no se valida aquí: hasta que no llegan los mazos del usuario no se
     // sabe si existe, y de eso se encarga la pantalla.
+    equipos: p.get("equipos") === "1",
     imprimir: imprimir === null ? null : imprimir || "1",
     baraja: p.get("baraja") || null,
     grupo: esTipoBaraja(grupo) ? grupo : null,
@@ -43,12 +44,13 @@ export function leerHash() {
   };
 }
 
-export function componerHash({ imprimir, baraja, grupo, tipos, carta }) {
+export function componerHash({ equipos, imprimir, baraja, grupo, tipos, carta }) {
   // A mano en vez de con URLSearchParams: sus claves de baraja llevan ":" y
   // acabarían como "%3A", que convierte un enlace legible en un jeroglífico.
   const partes = [];
   // La pantalla de mazos de impresión sustituye a todo lo demás: no se está
   // viendo una baraja mientras se monta un mazo.
+  if (equipos) return "equipos=1";
   if (imprimir) return "imprimir=" + imprimir;
   if (baraja) partes.push("baraja=" + baraja);
   // El grupo es estado de la portada: con una baraja abierta no pinta nada.

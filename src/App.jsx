@@ -16,7 +16,7 @@ import { cartasParaImprimir, refDe, useMazosImpresion } from "./data/mazos-impre
 import { pendientesDeImprimir, useImpresiones } from "./data/impresiones.js";
 import { tieneHistorial } from "./data/versiones.js";
 import { esResumenes } from "./data/tipos-baraja.js";
-import { completeVerification, getSessionUser, login, loginWithGoogle, logout, register, requestAccessReview, sendVerification, userAvatarUrl } from "./appwrite.js";
+import { crearBanda, completeVerification, getSessionUser, login, loginWithGoogle, logout, register, requestAccessReview, sendVerification, userAvatarUrl } from "./appwrite.js";
 import { getFormato, STORAGE_KEY_FORMATO } from "./print/formatos.js";
 import {
   desvioDe,
@@ -43,6 +43,7 @@ import DetalleCarta from "./viewer/DetalleCarta.jsx";
 import Indice from "./viewer/Indice.jsx";
 import Portada from "./viewer/Portada.jsx";
 import MazosImpresion from "./viewer/MazosImpresion.jsx";
+import MisEquipos from "./viewer/MisEquipos.jsx";
 import AnadirAMazo from "./viewer/AnadirAMazo.jsx";
 import DialogoVersiones from "./viewer/DialogoVersiones.jsx";
 import ConfirmarImpresion from "./viewer/ConfirmarImpresion.jsx";
@@ -105,6 +106,7 @@ export default function VisorCartasKT() {
   // pantalla, no un sitio al que volver.
   const [hojaAmpliada, setHojaAmpliada] = useState(null);
   const [verFichas, setVerFichas] = useState(false);
+  const [verEquipos, setVerEquipos] = useState(inicial.equipos);
   // Miniaturas de papel: si está abierto el diálogo, y la plancha ya resuelta
   // (qué unidades y con qué foto) que hay que imprimir. Mientras haya una
   // plancha resuelta, la hoja de impresión es la de miniaturas y no la del
@@ -400,6 +402,7 @@ export default function VisorCartasKT() {
 
   const cerrarSesion = async () => {
     await logout();
+    setVerEquipos(false);
     setUsuario(null);
     setBarajas([]);
     setEstadoCarga("login");
@@ -426,13 +429,14 @@ export default function VisorCartasKT() {
 
   // Reflejar el estado en la URL
   useEffect(() => {
-    escribirHash({ imprimir: mazoImpresion, baraja: mazoActivo, grupo, tipos: filtro, carta: detalleId });
-  }, [mazoImpresion, mazoActivo, grupo, filtro, detalleId]);
+    escribirHash({ equipos: verEquipos, imprimir: mazoImpresion, baraja: mazoActivo, grupo, tipos: filtro, carta: detalleId });
+  }, [verEquipos, mazoImpresion, mazoActivo, grupo, filtro, detalleId]);
 
   // Y al revés: alguien pega una URL o usa atrás/adelante
   useEffect(() => {
     const alCambiarHash = () => {
       const h = leerHash();
+      setVerEquipos(h.equipos);
       setMazoImpresion(h.imprimir);
       if (h.baraja !== mazoActivo) {
         setMazoActivo(h.baraja);
@@ -595,6 +599,22 @@ export default function VisorCartasKT() {
     return <PantallaEstado texto={errorCarga} accion="Reintentar" onAccion={reintentarCarga} />;
   }
 
+  if (verEquipos) {
+    return (
+      <>
+        <style>{estilos}</style>
+        <MisEquipos
+          key={usuario.$id}
+          usuario={usuario}
+          barajas={todasBarajas}
+          avatarUrl={userAvatarUrl(usuario)}
+          onLogout={cerrarSesion}
+          onInicio={() => setVerEquipos(false)}
+        />
+      </>
+    );
+  }
+
   // Los mazos de impresión son su propia pantalla: no son una baraja del
   // bucket, son una lista del usuario, y se imprimen con el diálogo de siempre.
   if (mazoImpresion) {
@@ -679,6 +699,7 @@ export default function VisorCartasKT() {
           onGrupo={setGrupo}
           onBaraja={cambiarMazo}
           onMazosImpresion={() => abrirMazos()}
+          onMisEquipos={() => setVerEquipos(true)}
           mazosImpresion={mazosImpresion.mazos.length}
           usuario={usuario}
           avatarUrl={userAvatarUrl(usuario)}
@@ -874,6 +895,7 @@ export default function VisorCartasKT() {
 
       {verCenitales && (
         <DialogoFichasCenitales
+          onGuardarBanda={(datos) => crearBanda({ ...datos, faccion: mazo.clave })}
           cartas={cartas}
           tokens={fichas}
           onCerrar={() => {

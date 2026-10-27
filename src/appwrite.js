@@ -1,4 +1,5 @@
 import { Account, Avatars, Client, Functions, ID, OAuthProvider, Permission, Query, Role, Storage, TablesDB } from "appwrite";
+import { datosDeBanda } from "./data/bandas.js";
 
 export const APPWRITE_ENDPOINT = import.meta.env.VITE_APPWRITE_ENDPOINT || "https://appwrite.civeira.net/v1";
 export const APPWRITE_PROJECT_ID = import.meta.env.VITE_APPWRITE_PROJECT_ID || "6a78dce100015acd19b2";
@@ -8,6 +9,8 @@ export const APPWRITE_DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID ||
 export const APPWRITE_PRINT_DECKS_TABLE_ID = import.meta.env.VITE_APPWRITE_PRINT_DECKS_TABLE_ID || "print_decks";
 export const APPWRITE_PRINTED_DECKS_TABLE_ID =
   import.meta.env.VITE_APPWRITE_PRINTED_DECKS_TABLE_ID || "printed_decks";
+
+export const APPWRITE_BANDAS_TABLE_ID = import.meta.env.VITE_APPWRITE_BANDAS_TABLE_ID || "bandas";
 
 const client = new Client().setEndpoint(APPWRITE_ENDPOINT).setProject(APPWRITE_PROJECT_ID);
 let storageJwt = "";
@@ -180,6 +183,50 @@ export async function borrarMazoImpresion(rowId) {
     databaseId: APPWRITE_DATABASE_ID,
     tableId: APPWRITE_PRINT_DECKS_TABLE_ID,
     rowId,
+  });
+}
+
+// ---------- Bandas privadas ----------
+// El propietario se obtiene de la sesión autenticada. Cada copia de operativo
+// conserva un id propio para poder asociarle historial en el futuro.
+export async function listarBandas(userId) {
+  const bandas = [];
+  for (;;) {
+    const page = await tablesDB.listRows({
+      databaseId: APPWRITE_DATABASE_ID,
+      tableId: APPWRITE_BANDAS_TABLE_ID,
+      queries: [
+        Query.equal("userId", userId), Query.orderDesc("$updatedAt"), Query.limit(100),
+        ...(bandas.length ? [Query.cursorAfter(bandas[bandas.length - 1].$id)] : []),
+      ],
+    });
+    bandas.push(...page.rows);
+    if (page.rows.length < 100) return bandas;
+  }
+}
+
+export async function crearBanda(datos) {
+  const banda = datosDeBanda({
+    ...datos,
+    operadores: datos.operadores.map((op) => ({ ...op, id: ID.unique() })),
+  });
+  const usuario = await account.get();
+  return tablesDB.createRow({
+    databaseId: APPWRITE_DATABASE_ID,
+    tableId: APPWRITE_BANDAS_TABLE_ID,
+    rowId: ID.unique(),
+    data: { ...banda, userId: usuario.$id },
+    permissions: permisosDe(usuario.$id),
+  });
+}
+
+// Actualiza la misma fila, conservando propietario y permisos del alta.
+export async function actualizarBanda(rowId, datos) {
+  return tablesDB.updateRow({
+    databaseId: APPWRITE_DATABASE_ID,
+    tableId: APPWRITE_BANDAS_TABLE_ID,
+    rowId,
+    data: datosDeBanda(datos),
   });
 }
 

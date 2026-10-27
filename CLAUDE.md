@@ -386,6 +386,53 @@ escalan con 15/28 mm.
 Armas, reglas y acciones salen de `datos` (todas las cartas del agente juntas) y
 se cortan si no caben: son pruebas de formato, no sustitutos de la ficha.
 
+## Bandas privadas
+
+«Guardar como banda» en `viewer/DialogoFichasCenitales.jsx` abre
+`DialogoGuardarBanda.jsx` para pedir el nombre. Guarda la selección exacta,
+incluidos los nombres sugeridos resueltos, sin imprimir ni cerrar la selección.
+Un error conserva el diálogo abierto para reintentar; el éxito se confirma
+después de recibir la fila de Appwrite.
+
+`crearBanda()` (`src/appwrite.js`) obtiene el propietario de `account.get()`.
+La tabla `kt_cartas.bandas` tiene `rowSecurity: true`, solo permite crear a
+usuarios aceptados y concede lectura, actualización y borrado al dueño de cada
+fila. No hay permisos de lectura o escritura globales. El ID de tabla se puede
+configurar con `VITE_APPWRITE_BANDAS_TABLE_ID`.
+
+Cada banda guarda `nombre`, `faccion` (clave de la baraja), `familia` de fotos
+para ANJ y `operadores`: un array de cadenas JSON con `id` propio de cada copia,
+`cartaId`, `titulo` y `nombre`. `data/bandas.js` valida estos datos; no se copian
+reglas ni imágenes. El `$id` de la banda y los IDs de sus miembros permiten
+asociar partidas y cambios en futuras tablas, que deberán repetir los permisos
+privados en cada fila: un `bandaId` por sí solo no concede ni restringe acceso.
+«Mis equipos», junto a «Mazos de impresión» en la barra de la portada, abre
+la sección `viewer/MisEquipos.jsx` (`#equipos=1`), con las tarjetas de la portada
+agrupadas por la clave `faccion` guardada y el icono de su baraja. Consulta las
+bandas al entrar y contempla carga, lista vacía, error y reintento.
+`listarBandas(userId)` pagina con cursor y filtra por propietario; la seguridad
+por fila sigue siendo la que restringe el acceso.
+
+Pulsar una banda abre el diálogo cenital con su familia, cantidades y nombres
+guardados. `seleccionDeBanda()` resuelve cada miembro por `cartaId` y conserva
+su ID aunque cambie el título de su carta. «Guardar cambios» llama a
+`actualizarBanda()` para reemplazar los datos de la misma fila, conservando
+facción, propietario y permisos, y refresca su tarjeta. Los nuevos miembros
+reciben un ID propio. Si falta una carta, se avisa y se bloquea el guardado
+para evitar perder miembros; si falta toda la facción, la tarjeta sigue visible
+pero no abre el diálogo. La impresión sustituye a las hojas de barajas y usa
+`flushSync` antes de `window.print()`.
+
+Comprobaciones: `node --test src/data/bandas.test.mjs` valida datos y esquema.
+Para probar el SDK sobre HTTP sin escribir datos reales:
+
+    postman simulation run postman/simulations/bandas.sim.yaml --port 4900 --output ndjson --no-history
+    BANDAS_SIM_URL=http://127.0.0.1:4900/appwrite/v1 node --test src/data/bandas-api.test.mjs
+
+La simulación modela la sesión, el alta, la actualización y el listado de bandas según el SDK y el
+esquema local; comprueba permisos enviados, filtros, paginación y errores 401/404. No sustituye una
+prueba de aislamiento entre dos usuarios contra Appwrite real.
+
 ## Mazos de impresión
 
 Listas de cartas **de varias barajas** que el usuario arma para reimprimir de

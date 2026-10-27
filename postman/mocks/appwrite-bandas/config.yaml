@@ -1,0 +1,9 @@
+version: 1
+name: appwrite-bandas
+slug: appwrite-bandas
+protocol: http
+interceptRequests: true
+scenarios:
+  - name: default
+    path: ./default.js
+    default: true

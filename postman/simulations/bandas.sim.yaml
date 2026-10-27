@@ -1,0 +1,5 @@
+simulation: bandas
+routing: path
+mocks:
+  - routeKey: appwrite
+    path: ../mocks/appwrite-bandas/config.yaml

@@ -12,7 +12,7 @@ import { agruparPorTipo, esResumenes } from "../data/tipos-baraja.js";
 import MenuUsuario from "./MenuUsuario.jsx";
 
 export default function Portada({
-  barajas, grupo, onGrupo, onBaraja, onMazosImpresion, mazosImpresion = 0,
+  barajas, grupo, onGrupo, onBaraja, onMazosImpresion, mazosImpresion = 0, onMisEquipos,
   usuario, avatarUrl, onLogout,
 }) {
   const grupos = agruparPorTipo(barajas);
@@ -37,6 +37,11 @@ export default function Portada({
             {onMazosImpresion && (
               <button className="btn btn-mini" onClick={onMazosImpresion}>
                 Mazos de impresión{mazosImpresion ? ` (${mazosImpresion})` : ""}
+              </button>
+            )}
+            {onMisEquipos && (
+              <button className="btn btn-mini" onClick={onMisEquipos}>
+                Mis equipos
               </button>
             )}
             <MenuUsuario usuario={usuario} avatarUrl={avatarUrl} onLogout={onLogout} />
